@@ -1,5 +1,6 @@
 module Main where
 
+import Idris.Main
 import Idris.Core.TT
 import Idris.AbsSyntax
 import Idris.ElabDecls
@@ -30,16 +31,16 @@ getOpts = do xs <- getArgs
     process opts (x:xs) = process (opts { inputs = x:inputs opts }) xs
     process opts [] = opts
 
-c_main :: Opts -> Idris ()
-c_main opts = do elabPrims
-                 loadInputs (inputs opts) Nothing
-                 mainProg <- elabMain
-                 ir <- compile (Via "malfunction") (output opts) (Just mainProg)
-                 runIO $ codegenMalfunction ir
+malfunction_main :: Opts -> Idris ()
+malfunction_main opts = do elabPrims
+                           loadInputs (inputs opts) Nothing
+                           mainProg <- elabMain
+                           ir <- compile (Via IBCFormat "malfunction") (output opts) (Just mainProg)
+                           runIO $ codegenMalfunction ir
 
 main :: IO ()
 main = do opts <- getOpts
           if (null (inputs opts))
              then showUsage
-             else  runMain (c_main opts)
+             else  runMain (malfunction_main opts)
 
