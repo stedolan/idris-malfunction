@@ -18,6 +18,7 @@ import System.Process
 import System.Directory
 
 
+
 data Sexp = S [Sexp] | A String | KInt Int | KStr String
 
 instance Show Sexp where
@@ -151,9 +152,14 @@ cgSwitch e cases =
     cgNonTagCase (SDefaultCase e) = [S [A "_", S [A "tag", A "_"], cgExp e]]
     
 
-arithSuffix (ATInt ITNative) = ""
-arithSuffix (ATInt ITChar) = ""
-arithSuffix (ATInt ITBig) = ".big"
+intSuffix (ITNative)     = ".int"
+intSuffix (ITChar)       = ""
+--intSuffix (ITFixed IT32) = ".i32"
+--intSuffix (ITFixed IT64) = ".i64"
+intSuffix ITBig          = ".ibig"
+intSuffix s = error $ "unsupported integer type: " ++ show s
+
+arithSuffix (ATInt x) = intSuffix x
 arithSuffix s = error $ "unsupported arithmetic type: " ++ show s
 
 
@@ -170,21 +176,80 @@ cgOp LStrCons [c, r] =
 cgOp LWriteStr [_, str] =
   S [A "apply", S [A "global", A "$Pervasives", A "$print_string"], cgVar str]
 cgOp LReadStr [_] = S [A "apply", S [A "global", A "$Pervasives", A "$read_line"], KInt 0]
+
+cgOp p@(LPlus (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LPlus (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LPlus t) args = S (A ("+" ++ arithSuffix t) : map cgVar args)
+cgOp p@(LMinus (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LMinus (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LMinus t) args = S (A ("-" ++ arithSuffix t) : map cgVar args)
+cgOp p@(LTimes (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LTimes (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LTimes t) args = S (A ("*" ++ arithSuffix t) : map cgVar args)
+cgOp p@(LSDiv (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSDiv (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LSDiv t) args = S (A ("/" ++ arithSuffix t) : map cgVar args)
+cgOp p@(LSRem (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSRem (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LSRem t) args = S (A ("%" ++ arithSuffix t) : map cgVar args)
+
+cgOp p@(LEq (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LEq (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LEq t) args = S (A ("==" ++ arithSuffix t) : map cgVar args)
+cgOp p@(LSLt (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSLt (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LSLt t) args = S (A ("<" ++ arithSuffix t) : map cgVar args)
+cgOp p@(LSGt (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSGt (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LSGt t) args = S (A (">" ++ arithSuffix t) : map cgVar args)
+cgOp p@(LSLe (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSLe (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LSLe t) args = S (A ("<=" ++ arithSuffix t) : map cgVar args)
+cgOp p@(LSGe (ATInt (ITFixed IT8))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSGe (ATInt (ITFixed IT16))) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 cgOp (LSGe t) args = S (A (">=" ++ arithSuffix t) : map cgVar args)
+
+cgOp p@(LSHL (ITFixed IT8)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSHL (ITFixed IT16)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LSHL t) args = S (A ("<<" ++ intSuffix t) : map cgVar args) 
+
+cgOp p@(LLSHR (ITFixed IT8)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LLSHR (ITFixed IT16)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LLSHR t) args = S (A (">>" ++ intSuffix t) : map cgVar args) 
+
+cgOp p@(LASHR (ITFixed IT8)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LASHR (ITFixed IT16)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LASHR t) args = S (A ("a>>" ++ intSuffix t) : map cgVar args) 
+
+cgOp p@(LAnd (ITFixed IT8)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LAnd (ITFixed IT16)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LAnd t) args = S (A ("&" ++ intSuffix t) : map cgVar args) 
+
+cgOp p@(LOr (ITFixed IT8)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LOr (ITFixed IT16)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LOr t) args = S (A ("|" ++ intSuffix t) : map cgVar args) 
+
+cgOp p@(LXOr (ITFixed IT8)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LXOr (ITFixed IT16)) args = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LXOr t) args = S (A ("^" ++ intSuffix t) : map cgVar args) 
+
 cgOp (LIntStr ITNative) args = pervasive "string_of_int" args
 cgOp (LIntStr ITBig) args = stdlib ["Z", "to_string"] args
 cgOp (LChInt _) [x] = cgVar x
 cgOp (LIntCh _) [x] = cgVar x
-cgOp (LSExt _ _) [x] = cgVar x -- FIXME
-cgOp (LTrunc _ _) [x] = cgVar x -- FIXME
+
+cgOp p@(LSExt from (ITFixed IT8)) [x] = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSExt from (ITFixed IT16)) [x] = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSExt (ITFixed IT8) to) [x] = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LSExt (ITFixed IT16) to) [x] = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LSExt from to) [x]  = S [A ("convert" ++ (intSuffix from) ++ (intSuffix to)) , cgVar x]
+
+cgOp p@(LTrunc from (ITFixed IT8)) [x] = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LTrunc from (ITFixed IT16)) [x] = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LTrunc (ITFixed IT8) to) [x] = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp p@(LTrunc (ITFixed IT16) to) [x] = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
+cgOp (LTrunc from to) [x] = S [A ("convert" ++ (intSuffix from) ++ (intSuffix to)) , cgVar x]
+
 cgOp (LStrInt ITNative) [x] = pervasive "int_of_string" [x]
 cgOp LStrEq args = stdlib ["String", "equal"] args
 cgOp LStrLen [x] = S [A "length.byte", cgVar x]
@@ -196,11 +261,16 @@ cgOp LStrRev [s] = S [A "apply", A "$%strrev", cgVar s]
 cgOp p _ = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 
 
+
+
+
 cgConst (I n) = KInt n
-cgConst (BI n) = S [A "i.big", A (show n)]
+cgConst (BI n) = A $ (show n) ++ ".ibig"
 cgConst (Fl x) = error "no floats"
 cgConst (Ch i) = KInt (ord i)
 cgConst (Str s) = KStr s
-cgConst k = error $ "unimplemented constant " ++ show k
+--cgConst (B32 n) = A $ (show n) ++ ".i32"
+--cgConst (B64 n) =  A $ (show n) ++ ".i64"
+cgConst k = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented constant: " ++ show k]
 
 
