@@ -153,7 +153,7 @@ cgSwitch e cases =
 
 arithSuffix (ATInt ITNative) = ""
 arithSuffix (ATInt ITChar) = ""
-arithSuffix (ATInt ITBig) = ".big"
+arithSuffix (ATInt ITBig) = ".ibig"
 arithSuffix s = error $ "unsupported arithmetic type: " ++ show s
 
 
@@ -197,7 +197,7 @@ cgOp p _ = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ 
 
 
 cgConst (I n) = KInt n
-cgConst (BI n) = S [A "i.big", A (show n)]
+cgConst (BI n) = A $ (show n) ++ ".ibig"
 cgConst (Fl x) = error "no floats"
 cgConst (Ch i) = KInt (ord i)
 cgConst (Str s) = KStr s
