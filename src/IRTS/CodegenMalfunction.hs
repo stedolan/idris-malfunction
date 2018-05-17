@@ -42,7 +42,7 @@ codegenMalfunction ci = do
     S (A "module" : shuffle (simpleDecls ci)
        [S [A "_", S [A "apply", cgName (sMN 0 "runMain"), KInt 0]],
         S [A "export"]])
-  callCommand $ "malfunction compile -o \"" ++ outputFile ci ++ "\" \"" ++ tmp ++ "\""
+  callCommand $ "malfunction compile -o " ++ outputFile ci ++ " " ++ tmp
   callCommand $ "malfunction fmt " ++ tmp ++ " > " ++ outputFile ci ++ ".mlf"
   removeFile tmp
   where
