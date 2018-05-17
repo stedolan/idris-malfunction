@@ -7,7 +7,6 @@ import Idris.Options
 import IRTS.CodegenCommon
 
 import IRTS.Compiler
-import IRTS.CodegenMalfunction
 
 import System.Environment
 import System.Exit
@@ -17,18 +16,16 @@ import Util.System
 
 getDecls :: CodeGenerator
 getDecls ci = do
-    -- traverse  putStrLn $ show (simpleDecls ci)
-    let repr =  unwords $ map (\ x -> show x ++ "\n\n\n") (liftDecls ci)
+    let repr =  unwords $ map (\ x -> show x ++ "\n\n\n") (simpleDecls ci)
     putStrLn repr
-    writeFile "langRepr.txt" repr
-    return ()
+    writeFile (outputFile ci) repr
 
 doStuff :: FilePath -> Idris ()
 doStuff file = do 
     elabPrims
     loadInputs [file] Nothing
     mainProg <- elabMain
-    ir <- compile (Via IBCFormat "malfunction") "a.out" (Just mainProg)
+    ir <- compile (Via IBCFormat "malfunction") (file ++ ".repr") (Just mainProg)
     runIO $ getDecls ir
 
 main :: IO ()
