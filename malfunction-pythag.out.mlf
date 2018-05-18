@@ -1,0 +1,953 @@
+(module
+  ($%strrev
+    (lambda ($s)
+      (let ($n (- (length.byte $s) 1))
+        (apply (global $String $mapi)
+          (lambda ($i $c) (load.byte $s (- $n $i))) $s))))
+  ($Void_elim (lambda ($%unused) 0))
+  ($Void___casefun__Void___case (lambda ($%unused) 0))
+  ($Prelude.Applicative.Alternative_ictor#%34%Applicative%32%f%34%
+    (lambda ($0 $1)
+      (let ($%sw $1)
+        (switch $%sw
+          ((tag 0)
+            (switch (field 0 $%sw)
+              (0 (let ($2 (field 1 $%sw)) ($3 (field 2 $%sw)) $2))))))))
+  ($_Prelude.Interfaces.Prelude.Interfaces.@Prelude.Interfaces.Ord$Int%58%!<%58%0_with_107
+    (lambda ($0 $1 $2)
+      (let ($%sw $0)
+        (switch $%sw
+          ((tag 0) (switch (field 0 $%sw) (0 (let (block (tag 1) 1)))))
+          (_ (tag _) (block (tag 0) 0))))))
+  ($_Prelude.Strings.strM_with_32
+    (lambda ($0 $1)
+      (let ($%sw $1)
+        (switch $%sw
+          ((tag 0)
+            (switch (field 0 $%sw)
+              (0 (let (let ($2 (load.byte $0 0)) (block (tag 1) 1 $2))))))
+          ((tag 1) (switch (field 0 $%sw) (1 (let (block (tag 0) 0)))))))))
+  ($_Prelude.Interfaces.Prelude.Show.@Prelude.Interfaces.Ord$Prec%58%!>%58%0_with_27
+    (lambda ($0 $1 $2)
+      (let ($%sw $0)
+        (switch $%sw
+          ((tag 2) (switch (field 0 $%sw) (2 (let (block (tag 1) 1)))))
+          (_ (tag _) (block (tag 0) 0))))))
+  (rec
+    ($Prelude.Prelude.@Prelude.Enum$Int%58%!enumFromTo%58%0%58%go%39%%58%0
+      (lambda ($0 $1 $2 $3 $4)
+        (let ($%sw $3)
+          (switch $%sw (0 (block (tag 1) 1 $4 $2))
+            (_ (tag _)
+              (let ($5 (let ($5 1.ibig) (-.ibig $3 $5)))
+                (let ($6 0)
+                  (let ($7 0)
+                    (let ($8 (block (tag 1) 1 $4 $2))
+                      (let ($9 (let ($9 1) (- $4 $9)))
+                        (apply
+                          $Prelude.Prelude.@Prelude.Enum$Int%58%!enumFromTo%58%0%58%go%39%%58%0
+                          $6 $7 $8 $5 $9))))))))))))
+  (rec
+    ($Prelude.List.reverse%58%reverse%39%%58%0
+      (lambda ($0 $1 $2)
+        (let ($%sw $2)
+          (switch $%sw ((tag 0) (switch (field 0 $%sw) (0 (let $1))))
+            ((tag 1)
+              (switch (field 0 $%sw)
+                (1
+                  (let ($3 (field 1 $%sw)) ($4 (field 2 $%sw))
+                    (let ($5 0)
+                      (let ($6 (block (tag 1) 1 $3 $1))
+                        (apply $Prelude.List.reverse%58%reverse%39%%58%0 $5
+                          $6 $4))))))))))))
+  ($%123%EVAL_0%125%
+    (lambda ($0) (let ($%sw $0) (switch $%sw (_ (tag _) $0)))))
+  ($Prelude.Interfaces.Prelude.Interfaces.@Prelude.Interfaces.Ord$Integer%58%!compare%58%0
+    (lambda ($0 $1)
+      (let ($2 (==.ibig $0 $1))
+        (let ($%sw $2)
+          (switch $%sw
+            (0
+              (let ($3 (<.ibig $0 $1))
+                (let ($%sw $3)
+                  (switch $%sw (0 (block (tag 2) 2))
+                    (_ (tag _) (block (tag 0) 0))))))
+            (_ (tag _) (block (tag 1) 1)))))))
+  ($Prelude.Interfaces.Prelude.Interfaces.@Prelude.Interfaces.Ord$Int%58%!compare%58%0
+    (lambda ($0 $1)
+      (let ($2 (== $0 $1))
+        (let ($%sw $2)
+          (switch $%sw
+            (0
+              (let ($3 (< $0 $1))
+                (let ($%sw $3)
+                  (switch $%sw (0 (block (tag 2) 2))
+                    (_ (tag _) (block (tag 0) 0))))))
+            (_ (tag _) (block (tag 1) 1)))))))
+  ($Prelude.Prelude.@Prelude.Enum$Int%58%!enumFromTo%58%0
+    (lambda ($0 $1)
+      (let
+        ($2
+          (let
+            ($2
+              (apply
+                $Prelude.Interfaces.Prelude.Interfaces.@Prelude.Interfaces.Ord$Int%58%!compare%58%0
+                $0 $1))
+            (let ($%sw $2)
+              (switch $%sw
+                ((tag 0) (switch (field 0 $%sw) (0 (let (block (tag 1) 1)))))
+                (_ (tag _)
+                  (let ($3 (== $0 $1))
+                    (let ($%sw $3)
+                      (switch $%sw (0 (block (tag 0) 0))
+                        (_ (tag _) (block (tag 1) 1))))))))))
+        (let ($%sw $2)
+          (switch $%sw
+            ((tag 0)
+              (switch (field 0 $%sw)
+                (0
+                  (let
+                    (let ($3 0)
+                      (let ($4 (block (tag 0) 0))
+                        (let
+                          ($5
+                            (let ($5 0)
+                              (let ($6 0)
+                                (let ($7 (block (tag 0) 0))
+                                  (let ($8 (let ($8 (- $0 $1)) $8))
+                                    (apply
+                                      $Prelude.Prelude.@Prelude.Enum$Int%58%!enumFromTo%58%0%58%go%39%%58%0
+                                      $5 $6 $7 $8 $0))))))
+                          (apply $Prelude.List.reverse%58%reverse%39%%58%0 $3
+                            $4 $5))))))))
+            ((tag 1)
+              (switch (field 0 $%sw)
+                (1
+                  (let
+                    (let ($3 0)
+                      (let ($4 0)
+                        (let ($5 (block (tag 0) 0))
+                          (let ($6 (let ($6 (- $1 $0)) $6))
+                            (apply
+                              $Prelude.Prelude.@Prelude.Enum$Int%58%!enumFromTo%58%0%58%go%39%%58%0
+                              $3 $4 $5 $6 $1))))))))))))))
+  ($Decidable.Equality.Decidable.Equality.@Decidable.Equality.DecEq$Bool%58%!decEq%58%0
+    (lambda ($0 $1)
+      (let ($%sw $1)
+        (switch $%sw
+          ((tag 0)
+            (switch (field 0 $%sw)
+              (0
+                (let
+                  (let ($%sw $0)
+                    (switch $%sw
+                      ((tag 0)
+                        (switch (field 0 $%sw) (0 (let (block (tag 0) 0)))))
+                      ((tag 1)
+                        (switch (field 0 $%sw) (1 (let (block (tag 1) 1)))))))))))
+          ((tag 1)
+            (switch (field 0 $%sw)
+              (1
+                (let
+                  (let ($%sw $0)
+                    (switch $%sw
+                      ((tag 0)
+                        (switch (field 0 $%sw) (0 (let (block (tag 1) 1)))))
+                      ((tag 1)
+                        (switch (field 0 $%sw) (1 (let (block (tag 0) 0)))))))))))))))
+  ($Main.%123%pythag_4%125% (lambda ($0) (block (tag 0) 0)))
+  ($Main.%123%pythag_3%125%
+    (lambda ($0 $1) (let ($2 (block (tag 0) 0)) (block (tag 1) 1 $1 $2))))
+  ($Prelude.Bool.||
+    (lambda ($0 $1)
+      (let ($%sw $0)
+        (switch $%sw
+          ((tag 0)
+            (switch (field 0 $%sw) (0 (let (apply $%123%EVAL_0%125% $1)))))
+          ((tag 1) (switch (field 0 $%sw) (1 (let $0))))))))
+  ($Prelude.Show.showParens
+    (lambda ($0 $1)
+      (let ($%sw $0)
+        (switch $%sw ((tag 0) (switch (field 0 $%sw) (0 (let $1))))
+          ((tag 1)
+            (switch (field 0 $%sw)
+              (1
+                (let
+                  (let ($2 "(")
+                    (let
+                      ($3
+                        (let ($3 ")") (apply (global $Pervasives $^) $1 $3)))
+                      (apply (global $Pervasives $^) $2 $3)))))))))))
+  ($Prelude.Show.show (lambda ($0 $1) $1))
+  ($Prelude.Show.precCon
+    (lambda ($0)
+      (let ($%sw $0)
+        (switch $%sw ((tag 0) (switch (field 0 $%sw) (0 (let 0.ibig))))
+          ((tag 1) (switch (field 0 $%sw) (1 (let 1.ibig))))
+          ((tag 2) (switch (field 0 $%sw) (2 (let 2.ibig))))
+          ((tag 3) (switch (field 0 $%sw) (3 (let 3.ibig))))
+          ((tag 4) (switch (field 0 $%sw) (4 (let 4.ibig))))
+          ((tag 5) (switch (field 0 $%sw) (5 (let 5.ibig))))
+          ((tag 6) (switch (field 0 $%sw) (6 (let 6.ibig))))))))
+  ($Prelude.Bool.not
+    (lambda ($0)
+      (let ($%sw $0)
+        (switch $%sw
+          ((tag 0) (switch (field 0 $%sw) (0 (let (block (tag 1) 1)))))
+          ((tag 1) (switch (field 0 $%sw) (1 (let (block (tag 0) 0)))))))))
+  ($Prelude.Interfaces.intToBool
+    (lambda ($0)
+      (let ($%sw $0)
+        (switch $%sw (0 (block (tag 0) 0)) (_ (tag _) (block (tag 1) 1))))))
+  ($Prelude.Bool.ifThenElse
+    (lambda ($0 $1 $2 $3)
+      (let ($%sw $1)
+        (switch $%sw
+          ((tag 0)
+            (switch (field 0 $%sw) (0 (let (apply $%123%EVAL_0%125% $3)))))
+          ((tag 1)
+            (switch (field 0 $%sw) (1 (let (apply $%123%EVAL_0%125% $2)))))))))
+  (rec
+    ($Prelude.List.++
+      (lambda ($0 $1 $2)
+        (let ($%sw $1)
+          (switch $%sw ((tag 0) (switch (field 0 $%sw) (0 (let $2))))
+            ((tag 1)
+              (switch (field 0 $%sw)
+                (1
+                  (let ($3 (field 1 $%sw)) ($4 (field 2 $%sw))
+                    (let ($5 (let ($5 0) (apply $Prelude.List.++ $5 $4 $2)))
+                      (block (tag 1) 1 $3 $5)))))))))))
+  ($Main.%123%pythag_2%125%
+    (lambda ($0 $1 $2 $3 $4)
+      (let ($5 0)
+        (let
+          ($6
+            (let
+              ($6 (let ($6 (block (tag 0) 0 $1 $2)) (block (tag 0) 0 $0 $6)))
+              (let ($7 (block (tag 0) 0)) (block (tag 1) 1 $6 $7))))
+          (apply $Prelude.List.++ $5 $6 $4)))))
+  ($Prelude.Bool.&&
+    (lambda ($0 $1)
+      (let ($%sw $0)
+        (switch $%sw ((tag 0) (switch (field 0 $%sw) (0 (let $0))))
+          ((tag 1)
+            (switch (field 0 $%sw) (1 (let (apply $%123%EVAL_0%125% $1)))))))))
+  ($world (lambda ($0) $0)) ($unsafePerformPrimIO (lambda ($%unused) 0))
+  ($prim__writeString
+    (lambda ($0 $1) (apply (global $Pervasives $print_string) $1)))
+  ($prim__writeFile
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__writeFile")))
+  ($prim__vm
+    (lambda ($0)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__vm")))
+  ($prim__toStrInt
+    (lambda ($0) (apply (global $Pervasives $string_of_int) $0)))
+  (rec
+    ($%123%APPLY_0%125%
+      (lambda ($0 $1)
+        (let ($%sw $0)
+          (switch $%sw
+            ((tag 52)
+              (switch (field 0 $%sw)
+                (65652 (let (apply $Main.%123%main_0%125% $1)))))
+            ((tag 53)
+              (switch (field 0 $%sw)
+                (65653 (let (apply $Main.%123%main_1%125% $1)))))
+            ((tag 54)
+              (switch (field 0 $%sw)
+                (65654
+                  (let ($2 (field 1 $%sw)) ($3 (field 2 $%sw))
+                    ($4 (field 3 $%sw)) ($5 (field 4 $%sw))
+                    (apply $Main.%123%pythag_2%125% $2 $3 $4 $5 $1)))))
+            ((tag 55)
+              (switch (field 0 $%sw)
+                (65655
+                  (let ($2 (field 1 $%sw))
+                    (apply $Main.%123%pythag_3%125% $2 $1)))))
+            ((tag 56)
+              (switch (field 0 $%sw)
+                (65656 (let (apply $Main.%123%pythag_4%125% $1)))))
+            ((tag 57)
+              (switch (field 0 $%sw)
+                (65657
+                  (let ($2 (field 1 $%sw)) ($3 (field 2 $%sw))
+                    ($4 (field 3 $%sw))
+                    (apply $Main.%123%pythag_5%125% $2 $3 $4 $1)))))
+            ((tag 58)
+              (switch (field 0 $%sw)
+                (65658
+                  (let ($2 (field 1 $%sw)) ($3 (field 2 $%sw))
+                    (apply $Main.%123%pythag_6%125% $2 $3 $1)))))
+            ((tag 59)
+              (switch (field 0 $%sw)
+                (65659
+                  (let ($2 (field 1 $%sw))
+                    (apply $Main.%123%pythag_7%125% $2 $1)))))
+            ((tag 60)
+              (switch (field 0 $%sw)
+                (65660
+                  (let ($2 (field 1 $%sw)) ($3 (field 2 $%sw))
+                    ($4 (field 3 $%sw)) ($5 (field 4 $%sw))
+                    (apply $Prelude.Interactive.print%39% $2 $3 $4 $5 $1)))))
+            ((tag 61)
+              (switch (field 0 $%sw)
+                (65661 (let (apply $prim__toStrInt $1)))))
+            ((tag 62)
+              (switch (field 0 $%sw)
+                (65662
+                  (let ($2 (field 1 $%sw)) ($3 (field 2 $%sw))
+                    ($4 (field 3 $%sw)) (block (tag 54) 65654 $2 $3 $4 $1)))))
+            ((tag 64)
+              (switch (field 0 $%sw) (65664 (let (block (tag 55) 65655 $1)))))
+            ((tag 66)
+              (switch (field 0 $%sw)
+                (65666
+                  (let ($2 (field 1 $%sw)) ($3 (field 2 $%sw))
+                    (block (tag 57) 65657 $2 $3 $1)))))
+            ((tag 68)
+              (switch (field 0 $%sw)
+                (65668
+                  (let ($2 (field 1 $%sw)) (block (tag 58) 65658 $2 $1)))))
+            ((tag 70)
+              (switch (field 0 $%sw) (65670 (let (block (tag 59) 65659 $1)))))
+            (_ (tag _) 0)))))
+    ($Prelude.Interactive.print%39%
+      (lambda ($0 $1 $2 $3 $4)
+        (let
+          ($5
+            (let ($5 (apply $%123%APPLY_0%125% $2 $3))
+              (apply (global $Pervasives $print_string) $5)))
+          (block (tag 0) 0))))
+    ($Main.%123%main_0%125%
+      (lambda ($0)
+        (let ($%sw $0)
+          (switch $%sw
+            ((tag 0)
+              (switch (field 0 $%sw)
+                (0
+                  (let ($1 (field 1 $%sw)) ($2 (field 2 $%sw))
+                    (let ($3 "(")
+                      (let
+                        ($4
+                          (let
+                            ($4
+                              (let ($4 0)
+                                (let ($5 (block (tag 61) 65661))
+                                  (let ($6 (block (tag 0) 0))
+                                    (apply $Prelude.Show.primNumShow $4 $5 $6
+                                      $1)))))
+                            (let
+                              ($5
+                                (let ($5 ", ")
+                                  (let
+                                    ($6
+                                      (let
+                                        ($6
+                                          (let ($%sw $2)
+                                            (switch $%sw
+                                              ((tag 0)
+                                                (switch (field 0 $%sw)
+                                                  (0
+                                                    (let ($6 (field 1 $%sw))
+                                                      ($7 (field 2 $%sw))
+                                                      (let ($8 "(")
+                                                        (let
+                                                          ($9
+                                                            (let
+                                                              ($9
+                                                                (let 
+                                                                  ($9 0)
+                                                                  (let
+                                                                    ($10
+                                                                    (block
+                                                                    (tag 61)
+                                                                    65661))
+                                                                    (let
+                                                                    ($11
+                                                                    (block
+                                                                    (tag 0)
+                                                                    0))
+                                                                    (apply
+                                                                    $Prelude.Show.primNumShow
+                                                                    $9 $10
+                                                                    $11 $6)))))
+                                                              (let
+                                                                ($10
+                                                                  (let
+                                                                    ($10
+                                                                    ", ")
+                                                                    (let
+                                                                    ($11
+                                                                    (let
+                                                                    ($11
+                                                                    (let
+                                                                    ($11 0)
+                                                                    (let
+                                                                    ($12
+                                                                    (block
+                                                                    (tag 61)
+                                                                    65661))
+                                                                    (let
+                                                                    ($13
+                                                                    (block
+                                                                    (tag 0)
+                                                                    0))
+                                                                    (apply
+                                                                    $Prelude.Show.primNumShow
+                                                                    $11 $12
+                                                                    $13 $7)))))
+                                                                    (let
+                                                                    ($12 ")")
+                                                                    (apply
+                                                                    (global
+                                                                    $Pervasives
+                                                                    $^) $11
+                                                                    $12))))
+                                                                    (apply
+                                                                    (global
+                                                                    $Pervasives
+                                                                    $^) $10
+                                                                    $11))))
+                                                                (apply
+                                                                  (global
+                                                                    $Pervasives
+                                                                    $^)
+                                                                  $9 $10))))
+                                                          (apply
+                                                            (global
+                                                              $Pervasives $^)
+                                                            $8 $9))))))))))
+                                        (let ($7 ")")
+                                          (apply (global $Pervasives $^) $6
+                                            $7))))
+                                    (apply (global $Pervasives $^) $5 $6))))
+                              (apply (global $Pervasives $^) $4 $5))))
+                        (apply (global $Pervasives $^) $3 $4)))))))))))
+    ($Prelude.Show.primNumShow
+      (lambda ($0 $1 $2 $3)
+        (let ($4 (apply $%123%APPLY_0%125% $1 $3))
+          (let
+            ($5
+              (let
+                ($5
+                  (let
+                    ($5
+                      (let
+                        ($5
+                          (let ($%sw $2)
+                            (switch $%sw
+                              ((tag 0)
+                                (switch (field 0 $%sw) (0 (let 0.ibig))))
+                              ((tag 1)
+                                (switch (field 0 $%sw) (1 (let 1.ibig))))
+                              ((tag 2)
+                                (switch (field 0 $%sw) (2 (let 2.ibig))))
+                              ((tag 3)
+                                (switch (field 0 $%sw) (3 (let 3.ibig))))
+                              ((tag 4)
+                                (switch (field 0 $%sw) (4 (let 4.ibig))))
+                              ((tag 5)
+                                (switch (field 0 $%sw) (5 (let 5.ibig))))
+                              ((tag 6)
+                                (switch (field 0 $%sw) (6 (let 6.ibig)))))))
+                        (let ($6 5.ibig)
+                          (apply
+                            $Prelude.Interfaces.Prelude.Interfaces.@Prelude.Interfaces.Ord$Integer%58%!compare%58%0
+                            $5 $6))))
+                    (let ($%sw $5)
+                      (switch $%sw
+                        ((tag 2)
+                          (switch (field 0 $%sw) (2 (let (block (tag 1) 1)))))
+                        (_ (tag _)
+                          (let
+                            ($6
+                              (let
+                                ($6
+                                  (let ($%sw $2)
+                                    (switch $%sw
+                                      ((tag 0)
+                                        (switch (field 0 $%sw)
+                                          (0 (let 0.ibig))))
+                                      ((tag 1)
+                                        (switch (field 0 $%sw)
+                                          (1 (let 1.ibig))))
+                                      ((tag 2)
+                                        (switch (field 0 $%sw)
+                                          (2 (let 2.ibig))))
+                                      ((tag 3)
+                                        (switch (field 0 $%sw)
+                                          (3 (let 3.ibig))))
+                                      ((tag 4)
+                                        (switch (field 0 $%sw)
+                                          (4 (let 4.ibig))))
+                                      ((tag 5)
+                                        (switch (field 0 $%sw)
+                                          (5 (let 5.ibig))))
+                                      ((tag 6)
+                                        (switch (field 0 $%sw)
+                                          (6 (let 6.ibig)))))))
+                                (let ($7 5.ibig) (==.ibig $6 $7))))
+                            (let ($%sw $6)
+                              (switch $%sw (0 (block (tag 0) 0))
+                                (_ (tag _) (block (tag 1) 1))))))))))
+                (let ($%sw $5)
+                  (switch $%sw
+                    ((tag 0)
+                      (switch (field 0 $%sw) (0 (let (block (tag 0) 0)))))
+                    ((tag 1)
+                      (switch (field 0 $%sw)
+                        (1
+                          (let
+                            (let
+                              ($6
+                                (let
+                                  ($6
+                                    (let
+                                      ($6
+                                        (let ($6 "")
+                                          (apply (global $String $equal) $4
+                                            $6)))
+                                      (let ($%sw $6)
+                                        (switch $%sw (0 (block (tag 1) 1))
+                                          (_ (tag _) (block (tag 0) 0))))))
+                                  (let ($7 (block (tag 1) 1))
+                                    (apply
+                                      $Decidable.Equality.Decidable.Equality.@Decidable.Equality.DecEq$Bool%58%!decEq%58%0
+                                      $6 $7))))
+                              (let ($%sw $6)
+                                (switch $%sw
+                                  ((tag 0)
+                                    (switch (field 0 $%sw)
+                                      (0
+                                        (let
+                                          (let
+                                            ($7
+                                              (let ($7 (load.byte $4 0))
+                                                (let ($8 45) (== $7 $8))))
+                                            (let ($%sw $7)
+                                              (switch $%sw
+                                                (0 (block (tag 0) 0))
+                                                (_ (tag _) (block (tag 1) 1)))))))))
+                                  ((tag 1)
+                                    (switch (field 0 $%sw)
+                                      (1 (let (block (tag 0) 0))))))))))))))))
+            (let ($%sw $5)
+              (switch $%sw ((tag 0) (switch (field 0 $%sw) (0 (let $4))))
+                ((tag 1)
+                  (switch (field 0 $%sw)
+                    (1
+                      (let
+                        (let ($6 "(")
+                          (let
+                            ($7
+                              (let ($7 ")")
+                                (apply (global $Pervasives $^) $4 $7)))
+                            (apply (global $Pervasives $^) $6 $7)))))))))))))
+    ($Main.%123%main_1%125%
+      (lambda ($0)
+        (let ($1 "[")
+          (let
+            ($2
+              (let
+                ($2
+                  (let ($2 0)
+                    (let ($3 0)
+                      (let ($4 (block (tag 52) 65652))
+                        (let ($5 "")
+                          (apply
+                            $Prelude.Show.Prelude.Show.@Prelude.Show.Show$List%32%a%58%!show%58%0%58%show%39%%58%0
+                            $2 $3 $4 $5 $0))))))
+                (let ($3 "]") (apply (global $Pervasives $^) $2 $3))))
+            (apply (global $Pervasives $^) $1 $2)))))
+    ($Prelude.Show.Prelude.Show.@Prelude.Show.Show$List%32%a%58%!show%58%0%58%show%39%%58%0
+      (lambda ($0 $1 $2 $3 $4)
+        (let ($%sw $4)
+          (switch $%sw ((tag 0) (switch (field 0 $%sw) (0 (let $3))))
+            ((tag 1)
+              (switch (field 0 $%sw)
+                (1
+                  (let ($5 (field 1 $%sw)) ($6 (field 2 $%sw))
+                    (let ($%sw $6)
+                      (switch $%sw
+                        ((tag 0)
+                          (switch (field 0 $%sw)
+                            (0
+                              (let
+                                (let ($7 (apply $%123%APPLY_0%125% $2 $5))
+                                  (apply (global $Pervasives $^) $3 $7))))))
+                        (_ (tag _)
+                          (let ($7 0)
+                            (let ($8 0)
+                              (let
+                                ($9
+                                  (let
+                                    ($9
+                                      (let
+                                        ($9 (apply $%123%APPLY_0%125% $2 $5))
+                                        (let ($10 ", ")
+                                          (apply (global $Pervasives $^) $9
+                                            $10))))
+                                    (apply (global $Pervasives $^) $3 $9)))
+                                (apply
+                                  $Prelude.Show.Prelude.Show.@Prelude.Show.Show$List%32%a%58%!show%58%0%58%show%39%%58%0
+                                  $7 $8 $2 $9 $6)))))))))))))))
+    ($Main.%123%pythag_5%125%
+      (lambda ($0 $1 $2 $3)
+        (let ($4 0)
+          (let
+            ($5
+              (let ($5 0)
+                (let ($6 0)
+                  (let ($7 (block (tag 62) 65662 $2 $0 $1))
+                    (let ($8 (block (tag 0) 0))
+                      (let
+                        ($9
+                          (let ($9 0)
+                            (let
+                              ($10
+                                (let ($10 (block (tag 64) 65664))
+                                  (let ($11 (block (tag 56) 65656))
+                                    (block (tag 0) 0 $10 $11))))
+                              (let
+                                ($11
+                                  (let
+                                    ($11
+                                      (let
+                                        ($11
+                                          (let ($11 (* $2 $2))
+                                            (let ($12 (* $0 $0)) (+ $11 $12))))
+                                        (let ($12 (* $1 $1)) (== $11 $12))))
+                                    (let ($%sw $11)
+                                      (switch $%sw (0 (block (tag 0) 0))
+                                        (_ (tag _) (block (tag 1) 1))))))
+                                (apply $Prelude.Applicative.guard $9 $10 $11)))))
+                        (apply
+                          $Prelude.Foldable.Prelude.List.@Prelude.Foldable.Foldable$List%58%!foldr%58%0
+                          $5 $6 $7 $8 $9)))))))
+            (apply $Prelude.List.++ $4 $5 $3)))))
+    ($Prelude.Applicative.guard
+      (lambda ($0 $1 $2)
+        (let ($%sw $2)
+          (switch $%sw
+            ((tag 0)
+              (switch (field 0 $%sw)
+                (0
+                  (let
+                    (let ($%sw $1)
+                      (switch $%sw
+                        ((tag 0)
+                          (switch (field 0 $%sw)
+                            (0
+                              (let ($3 (field 1 $%sw)) ($4 (field 2 $%sw))
+                                (let ($5 0) (apply $%123%APPLY_0%125% $4 $5))))))))))))
+            ((tag 1)
+              (switch (field 0 $%sw)
+                (1
+                  (let
+                    (let ($%sw $1)
+                      (switch $%sw
+                        ((tag 0)
+                          (switch (field 0 $%sw)
+                            (0
+                              (let ($3 (field 1 $%sw)) ($4 (field 2 $%sw))
+                                (let
+                                  ($5
+                                    (let ($5 0)
+                                      (apply $%123%APPLY_0%125% $3 $5)))
+                                  (let ($6 (block (tag 0) 0))
+                                    (apply $%123%APPLY_0%125% $5 $6)))))))))))))))))
+    ($Prelude.Foldable.Prelude.List.@Prelude.Foldable.Foldable$List%58%!foldr%58%0
+      (lambda ($0 $1 $2 $3 $4)
+        (let ($%sw $4)
+          (switch $%sw ((tag 0) (switch (field 0 $%sw) (0 (let $3))))
+            ((tag 1)
+              (switch (field 0 $%sw)
+                (1
+                  (let ($5 (field 1 $%sw)) ($6 (field 2 $%sw))
+                    (let ($7 (apply $%123%APPLY_0%125% $2 $5))
+                      (let
+                        ($8
+                          (let ($8 0)
+                            (let ($9 0)
+                              (apply
+                                $Prelude.Foldable.Prelude.List.@Prelude.Foldable.Foldable$List%58%!foldr%58%0
+                                $8 $9 $2 $3 $6))))
+                        (apply $%123%APPLY_0%125% $7 $8)))))))))))
+    ($Main.%123%pythag_6%125%
+      (lambda ($0 $1 $2)
+        (let ($3 0)
+          (let
+            ($4
+              (let ($4 0)
+                (let ($5 0)
+                  (let ($6 (block (tag 66) 65666 $1 $0))
+                    (let ($7 (block (tag 0) 0))
+                      (let
+                        ($8
+                          (let ($8 1)
+                            (apply
+                              $Prelude.Prelude.@Prelude.Enum$Int%58%!enumFromTo%58%0
+                              $8 $1)))
+                        (apply
+                          $Prelude.Foldable.Prelude.List.@Prelude.Foldable.Foldable$List%58%!foldr%58%0
+                          $4 $5 $6 $7 $8)))))))
+            (apply $Prelude.List.++ $3 $4 $2)))))
+    ($Main.%123%pythag_7%125%
+      (lambda ($0 $1)
+        (let ($2 0)
+          (let
+            ($3
+              (let ($3 0)
+                (let ($4 0)
+                  (let ($5 (block (tag 68) 65668 $0))
+                    (let ($6 (block (tag 0) 0))
+                      (let
+                        ($7
+                          (let ($7 1)
+                            (apply
+                              $Prelude.Prelude.@Prelude.Enum$Int%58%!enumFromTo%58%0
+                              $7 $0)))
+                        (apply
+                          $Prelude.Foldable.Prelude.List.@Prelude.Foldable.Foldable$List%58%!foldr%58%0
+                          $3 $4 $5 $6 $7)))))))
+            (apply $Prelude.List.++ $2 $3 $1))))))
+  ($prim_io_bind (lambda ($0 $1 $2 $3) (apply $%123%APPLY_0%125% $3 $2)))
+  ($run__IO (lambda ($0 $1) (let ($2 0) (apply $%123%APPLY_0%125% $1 $2))))
+  ($Prelude.Applicative.empty
+    (lambda ($0 $1 $2)
+      (let ($%sw $1)
+        (switch $%sw
+          ((tag 0)
+            (switch (field 0 $%sw)
+              (0
+                (let ($3 (field 1 $%sw)) ($4 (field 2 $%sw))
+                  (apply $%123%APPLY_0%125% $4 $2)))))))))
+  ($Prelude.Applicative.pure
+    (lambda ($0 $1 $2) (apply $%123%APPLY_0%125% $1 $2)))
+  ($Main.pythag
+    (lambda ($0)
+      (let ($1 0)
+        (let ($2 0)
+          (let ($3 (block (tag 70) 65670))
+            (let ($4 (block (tag 0) 0))
+              (let
+                ($5
+                  (let ($5 1)
+                    (apply
+                      $Prelude.Prelude.@Prelude.Enum$Int%58%!enumFromTo%58%0
+                      $5 $0)))
+                (apply
+                  $Prelude.Foldable.Prelude.List.@Prelude.Foldable.Foldable$List%58%!foldr%58%0
+                  $1 $2 $3 $4 $5))))))))
+  ($Main.main
+    (lambda ($%unused)
+      (let ($0 0)
+        (let ($1 0)
+          (let ($2 (block (tag 53) 65653))
+            (let ($3 (let ($3 500) (apply $Main.pythag $3)))
+              (block (tag 60) 65660 $0 $1 $2 $3)))))))
+  ($Prelude.Show.Prelude.Show.@Prelude.Show.Show$%40%a%44%%32%b%41%%58%!show%58%0
+    (lambda ($0 $1 $2 $3 $4)
+      (let ($%sw $4)
+        (switch $%sw
+          ((tag 0)
+            (switch (field 0 $%sw)
+              (0
+                (let ($5 (field 1 $%sw)) ($6 (field 2 $%sw))
+                  (let ($7 "(")
+                    (let
+                      ($8
+                        (let ($8 (apply $%123%APPLY_0%125% $2 $5))
+                          (let
+                            ($9
+                              (let ($9 ", ")
+                                (let
+                                  ($10
+                                    (let
+                                      ($10 (apply $%123%APPLY_0%125% $3 $6))
+                                      (let ($11 ")")
+                                        (apply (global $Pervasives $^) $10
+                                          $11))))
+                                  (apply (global $Pervasives $^) $9 $10))))
+                            (apply (global $Pervasives $^) $8 $9))))
+                      (apply (global $Pervasives $^) $7 $8)))))))))))
+  ($%123%APPLY2_0%125%
+    (lambda ($0 $1 $2)
+      (let ($%sw $0)
+        (switch $%sw
+          ((tag 62)
+            (switch (field 0 $%sw)
+              (65662
+                (let ($3 (field 1 $%sw)) ($4 (field 2 $%sw))
+                  ($5 (field 3 $%sw))
+                  (apply $Main.%123%pythag_2%125% $3 $4 $5 $1 $2)))))
+          ((tag 64)
+            (switch (field 0 $%sw)
+              (65664 (let (apply $Main.%123%pythag_3%125% $1 $2)))))
+          ((tag 66)
+            (switch (field 0 $%sw)
+              (65666
+                (let ($3 (field 1 $%sw)) ($4 (field 2 $%sw))
+                  (apply $Main.%123%pythag_5%125% $3 $4 $1 $2)))))
+          ((tag 68)
+            (switch (field 0 $%sw)
+              (65668
+                (let ($3 (field 1 $%sw))
+                  (apply $Main.%123%pythag_6%125% $3 $1 $2)))))
+          ((tag 70)
+            (switch (field 0 $%sw)
+              (65670 (let (apply $Main.%123%pythag_7%125% $1 $2)))))
+          (_ (tag _)
+            (let ($3 (apply $%123%APPLY_0%125% $0 $1))
+              (apply $%123%APPLY_0%125% $3 $2)))))))
+  ($%123%runMain_0%125%
+    (lambda ($%unused)
+      (let
+        ($0
+          (let ($0 (apply $Main.main 0))
+            (let ($1 0) (apply $%123%APPLY_0%125% $0 $1))))
+        (apply $%123%EVAL_0%125% $0))))
+  ($_Prelude.Show.firstCharIs_with_45
+    (lambda ($0 $1 $2)
+      (let ($%sw $2)
+        (switch $%sw
+          ((tag 0) (switch (field 0 $%sw) (0 (let (block (tag 0) 0)))))
+          ((tag 1)
+            (switch (field 0 $%sw)
+              (1 (let ($3 (field 1 $%sw)) (apply $%123%APPLY_0%125% $0 $3)))))))))
+  ($io_bind_IO__idr_108_34_108_36_case
+    (lambda ($0 $1 $2 $3 $4 $5 $6 $7) (apply $%123%APPLY_0%125% $7 $5)))
+  ($prim__subInt (lambda ($0 $1) (- $0 $1)))
+  ($prim__strHead (lambda ($0) (load.byte $0 0)))
+  ($prim__stdout
+    (lambda ($%unused)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__stdout")))
+  ($prim__stdin
+    (lambda ($%unused)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__stdin")))
+  ($prim__stderr
+    (lambda ($%unused)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__stderr")))
+  ($prim__sltInt (lambda ($0 $1) (< $0 $1)))
+  ($prim__sltBigInt (lambda ($0 $1) (<.ibig $0 $1)))
+  ($prim__sizeofPtr
+    (lambda ($%unused)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__sizeofPtr")))
+  ($prim__sextInt_BigInt (lambda ($0) $0))
+  ($prim__registerPtr
+    (lambda ($0 $1)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__registerPtr")))
+  ($prim__readFile
+    (lambda ($0 $1)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__readFile")))
+  ($prim__readChars
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__readChars")))
+  ($prim__ptrOffset
+    (lambda ($0 $1)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__ptrOffset")))
+  ($prim__pokeSingle
+    (lambda ($0 $1 $2 $3)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__pokeSingle")))
+  ($prim__pokePtr
+    (lambda ($0 $1 $2 $3)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__pokePtr")))
+  ($prim__pokeDouble
+    (lambda ($0 $1 $2 $3)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__pokeDouble")))
+  ($prim__poke8
+    (lambda ($0 $1 $2 $3)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__poke8")))
+  ($prim__poke64
+    (lambda ($0 $1 $2 $3)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__poke64")))
+  ($prim__poke32
+    (lambda ($0 $1 $2 $3)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__poke32")))
+  ($prim__poke16
+    (lambda ($0 $1 $2 $3)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__poke16")))
+  ($prim__peekSingle
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__peekSingle")))
+  ($prim__peekPtr
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__peekPtr")))
+  ($prim__peekDouble
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__peekDouble")))
+  ($prim__peek8
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__peek8")))
+  ($prim__peek64
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__peek64")))
+  ($prim__peek32
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__peek32")))
+  ($prim__peek16
+    (lambda ($0 $1 $2)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__peek16")))
+  ($prim__null
+    (lambda ($%unused)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__null")))
+  ($prim__mulInt (lambda ($0 $1) (* $0 $1)))
+  ($prim__eqString (lambda ($0 $1) (apply (global $String $equal) $0 $1)))
+  ($prim__eqPtr
+    (lambda ($0 $1)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__eqPtr")))
+  ($prim__eqManagedPtr
+    (lambda ($0 $1)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__eqManagedPtr")))
+  ($prim__eqInt (lambda ($0 $1) (== $0 $1)))
+  ($prim__eqChar (lambda ($0 $1) (== $0 $1)))
+  ($prim__eqBigInt (lambda ($0 $1) (==.ibig $0 $1)))
+  ($prim__concat (lambda ($0 $1) (apply (global $Pervasives $^) $0 $1)))
+  ($prim__asPtr
+    (lambda ($0)
+      (apply (global $Pervasives $failwith)
+        "unimplemented: LExternal prim__asPtr")))
+  ($prim__addInt (lambda ($0 $1) (+ $0 $1)))
+  ($mkForeignPrim (lambda ($%unused) 0)) ($io_pure (lambda ($0 $1 $2 $3) $2))
+  ($io_bind
+    (lambda ($0 $1 $2 $3 $4 $5)
+      (let
+        ($6
+          (let ($6 (apply $%123%APPLY_0%125% $3 $5))
+            (apply $%123%APPLY_0%125% $4 $6)))
+        (apply $%123%APPLY_0%125% $6 $5))))
+  ($idris_crash (lambda ($%unused) 0))
+  ($call__IO
+    (lambda ($0 $1 $2) (let ($3 0) (apply $%123%APPLY_0%125% $2 $3))))
+  ($assert_unreachable (lambda ($%unused) 0))
+  ($Force (lambda ($0 $1 $2) (apply $%123%EVAL_0%125% $2)))
+  (_ (apply $%123%runMain_0%125% 0)) (export))

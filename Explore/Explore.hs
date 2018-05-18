@@ -16,7 +16,7 @@ import Util.System
 
 getDecls :: CodeGenerator
 getDecls ci = do
-    let repr =  unwords $ map (\ x -> show x ++ "\n\n\n") (simpleDecls ci)
+    let repr =  unwords $ map (\ x -> show x ++ "\n\n\n") (liftDecls ci)
     putStrLn repr
     writeFile (outputFile ci) repr
 
@@ -25,7 +25,7 @@ doStuff file = do
     elabPrims
     loadInputs [file] Nothing
     mainProg <- elabMain
-    ir <- compile (Via IBCFormat "malfunction") (file ++ ".repr") (Just mainProg)
+    ir <- compile (Via IBCFormat "malfunction") (file ++ ".lang.repr") (Just mainProg)
     runIO $ getDecls ir
 
 main :: IO ()
