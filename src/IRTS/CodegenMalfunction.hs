@@ -11,6 +11,7 @@ import Data.Char
 import Data.Ord
 import qualified Data.Set as S
 import qualified Data.Graph as Graph
+import Data.Maybe(mapMaybe)
 import Data.Function (on)
 import Control.Monad
 
@@ -42,7 +43,7 @@ cgSym s = A ('$' : chars s)
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
   writeFile tmp $ show $
-    S (A "module" : shuffle (simpleDecls ci)
+    S (A "module" : shuffle (liftDecls ci)
        [S [A "_", S [A "apply", cgName (sMN 0 "runMain"), KInt 0]],
         S [A "export"]])
   callCommand $ "malfunction compile -o " ++ outputFile ci ++ " " ++ tmp
@@ -51,45 +52,46 @@ codegenMalfunction ci = do
   where
     tmp = "idris_malfunction_output.mlf"
 
-shuffle :: [(Name, SDecl)] -> [Sexp] -> [Sexp]
-shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (map toNode decls))
+shuffle :: [(Name, LDecl)] -> [Sexp] -> [Sexp]
+shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (mapMaybe toNode decls))
   where
-    toBindings :: [Graph.SCC (Name, SDecl)] -> [Sexp]
+    toBindings :: [Graph.SCC (Name, LDecl)] -> [Sexp]
     toBindings [] = rest
-    toBindings (Graph.AcyclicSCC decl : comps) = cgDecl decl : toBindings comps
-    toBindings (Graph.CyclicSCC decls : comps) = S (A "rec" : map cgDecl decls) : toBindings comps
+    toBindings (Graph.AcyclicSCC decl : comps) =
+      case cgDecl decl of
+        Just sexp -> sexp : toBindings comps
+        Nothing -> toBindings comps
+    toBindings (Graph.CyclicSCC decls : comps) = S (A "rec" : mapMaybe cgDecl decls) : toBindings comps
    
-    toNode :: (Name, SDecl) -> ((Name, SDecl), Name, [Name])
-    toNode decl@(name, SFun _ _ _ body) =
-      (decl, name, S.toList (free body))
+    toNode :: (Name, LDecl) -> Maybe ((Name, LDecl), Name, [Name])
+    toNode decl@(name, LFun _ _ _ body) =
+       Just (decl, name, S.toList (free body))
+    toNode _ = Nothing
 
-    freev :: LVar -> S.Set Name
-    freev (Glob n) = S.singleton n
-    freev (Loc k) = S.empty
-
-    -- stupid over-approximation, since global names not shadowed
+    freeCase :: LAlt -> S.Set Name
+    freeCase (LConCase _ name names exp) =
+       S.unions $ S.singleton name : free exp : map S.singleton names 
+    freeCase (LConstCase _ exp) = free exp
+    freeCase (LDefaultCase exp) = free exp
     
-    free :: SExp -> S.Set Name
-    free (SV v) = freev v
-    free (SApp _ n _) = S.singleton n
-    free (SLet v e1 e2) = S.unions [freev v, free e1, free e2]
-    free (SUpdate v e) = S.unions [freev v, free e]
-    free (SCon (Just v) _ n vs) = S.unions (freev v : S.singleton n : map freev vs)
-    free (SCon Nothing _ n vs) = S.unions (S.singleton n : map freev vs)
-    free (SCase _ v cases) = S.unions (freev v : map freeCase cases)
-    free (SChkCase v cases) = S.unions (freev v : map freeCase cases)
-    free (SProj v _) = freev v
-    free (SConst _) = S.empty
-    free (SForeign _ _ args) = S.unions (map (freev . snd) args)
-    free (SOp _ args) = S.unions (map freev args)
-    free (SNothing) = S.empty
-    free (SError s) = S.empty
-
-    freeCase :: SAlt -> S.Set Name
-    freeCase (SConCase _ _ n ns e) = S.unions [S.singleton n, S.fromList ns, free e]
-    freeCase (SConstCase _ e) = free e
-    freeCase (SDefaultCase e) = free e
-
+    free :: LExp -> S.Set Name
+    free (LV name) = S.singleton name
+    free (LApp _ exp exps) = S.unions $ free exp : map free exps
+    free (LLazyApp name exps) = S.unions $ S.singleton name : map free exps
+    free (LLazyExp exp) = free exp
+    free (LForce exp) = free exp
+    free (LLet name exp1 exp2) =
+       S.unions [S.singleton name, free exp1, free exp2]
+    free (LLam names exp) = S.unions $ free exp : map S.singleton names
+    free (LProj exp _) = free exp
+    free (LCon _ _ name exps) = S.unions $ S.singleton name : map free exps
+    free (LCase _ exp alts) = S.unions $ free exp : map freeCase alts
+    free (LConst _ ) = S.empty
+    free (LForeign _ _ args) = S.unions $ map (free . snd) args
+    free (LOp _ exps) = S.unions $ map free exps
+    free (LNothing) = S.empty
+    free (LError _) = S.empty
+    
     prelude :: [Sexp]
     prelude = [
       S [A"$%strrev",
@@ -109,39 +111,43 @@ cgVar :: LVar -> Sexp
 cgVar (Loc n) = cgSym (show n)
 cgVar (Glob n) = cgName n
 
-cgDecl :: (Name, SDecl) -> Sexp
-cgDecl (name, SFun _ args i body) = S [cgName name, S [A "lambda", mkargs args, cgExp body]]
-  where
-    mkargs :: [Name] -> Sexp
-    mkargs [] = S [A "$%unused"]
-    mkargs args = S $ map (cgVar . Loc . fst) $ zip [0..] args
+cgDecl :: (Name, LDecl) -> Maybe Sexp
+cgDecl _ = Nothing
+cgDecl (name, LFun _ _ args body) =
+     Just $ S [cgName name, S [A "lambda", mkargs args, cgExp body]]
+    where
+     mkargs :: [Name] -> Sexp
+     mkargs [] = S [A "$%unused"]
+     mkargs args = S $ map (cgSym . show . fst) $ zip [0..] args
 
-cgExp :: SExp -> Sexp
-cgExp (SV v) = cgVar v
-cgExp (SApp _ fn []) = S [A "apply", cgName fn, KInt 0]
-cgExp (SApp _ fn args) = S (A "apply" : cgName fn : map cgVar args)
-cgExp (SLet v e body) = S [A "let", S [cgVar v, cgExp e], cgExp body]
-cgExp (SUpdate v e) = cgExp e
-cgExp (SProj e idx) = S [A "field", KInt (idx + 1), cgVar e]
-cgExp (SCon _ tag name args) = S (A "block": S [A "tag", KInt (tag `mod` 200)] : KInt tag : map cgVar args)
-cgExp (SCase _ e cases) = cgSwitch e cases
-cgExp (SChkCase e cases) = cgSwitch e cases
-cgExp (SConst k) = cgConst k
-cgExp (SForeign fn ret args) = error "no FFI"
-cgExp (SOp prim args) = cgOp prim args
-cgExp SNothing = KInt 0
-cgExp (SError s) = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "error: " ++ show s]
+cgExp :: LExp -> Sexp
+cgExp (LV name) = cgName name
+cgExp (LApp _ fn []) = S [A "apply", cgExp fn, KInt 0]
+-- I think in mlf functions need at least one argument
+cgExp (LApp _ fn args) = S (A "apply" : cgExp fn : map cgExp args)
+cgExp (LLet name exp body) = S [A "let", S [cgName name, cgExp exp], cgExp body]
+cgExp (LProj e idx) = S [A "field", KInt (idx + 1), cgExp e]
+cgExp (LCon _ tag name args) = 
+  S (A "block": S [A "tag", KInt (tag `mod` 200)] : KInt tag : map cgExp args)
+cgExp (LCase _ e cases) = cgSwitch e cases
+cgExp (LConst k) = cgConst k
+cgExp (LForeign fn ret args) = error "no FFI"
+cgExp (LOp prim args) = cgOp prim args
+cgExp LNothing = KInt 0
+cgExp (LError s) =
+   S [A "apply", S [A "global", A "$Pervasives", A "$failwith"],
+    KStr $ "error: " ++ show s]
 
-cgSwitch :: LVar -> [SAlt] -> Sexp
+cgSwitch :: LExp -> [LAlt] -> Sexp
 cgSwitch e cases =
-  S [A "let", S [scr, cgVar e],
+  S [A "let", S [scr, cgExp e],
      S $ [A "switch", scr] ++
          map cgTagGroup taggroups ++
          concatMap cgNonTagCase cases]
   where
     scr = A "$%sw"    
     tagcases = concatMap (\c -> case c of
-       c@(SConCase lv tag n args body) -> [(tag, c)]
+       c@(LConCase tag n args body) -> [(tag, c)]
        _ -> []) cases
     taggroups =
       map (\cases -> ((fst $ head cases) `mod` 200, map snd cases)) $
@@ -153,17 +159,17 @@ cgSwitch e cases =
 --      cgProjections c
     cgTagClass cases =
       S (A "switch" : S [A "field", KInt 0, scr] :
-         [S [KInt tag, cgProjections c] | c@(SConCase _ tag _ _ _) <- cases])
-    cgProjections (SConCase lv tag n args body) =
+         [S [KInt tag, cgProjections c] | c@(LConCase tag _ _ _) <- cases])
+    cgProjections (LConCase tag n args body) =
       S ([A "let"] ++
-         zipWith3 (\v i n -> S [cgVar (Loc v), S [A "field", KInt (i+1), scr]]) [lv..] [0..] args ++
+         zipWith3 (\v i n -> S [cgVar (Loc v), S [A "field", KInt (i+1), scr]]) [0..] [0..] args ++ -- [lv..] lv was used here, lv being the first param of SConstCase
          [cgExp body])
-    cgNonTagCase (SConCase _ _ _ _ _) = []
-    cgNonTagCase (SConstCase (I n) e) = [S [KInt n, cgExp e]]
-    cgNonTagCase (SConstCase (BI n) e) = [S [KInt (fromInteger n), cgExp e]]
-    cgNonTagCase (SConstCase (Ch c) e) = [S [KInt (ord c), cgExp e]]
-    cgNonTagCase (SConstCase k e) = error $ "unsupported constant selector: " ++ show k
-    cgNonTagCase (SDefaultCase e) = [S [A "_", S [A "tag", A "_"], cgExp e]]
+    cgNonTagCase (LConCase _ _ _ _) = []
+    cgNonTagCase (LConstCase (I n) e) = [S [KInt n, cgExp e]]
+    cgNonTagCase (LConstCase (BI n) e) = [S [KInt (fromInteger n), cgExp e]]
+    cgNonTagCase (LConstCase (Ch c) e) = [S [KInt (ord c), cgExp e]]
+    cgNonTagCase (LConstCase k e) = error $ "unsupported constant selector: " ++ show k
+    cgNonTagCase (LDefaultCase e) = [S [A "_", S [A "tag", A "_"], cgExp e]]
     
 arithSuffix :: ArithTy -> String
 arithSuffix (ATInt ITNative) = ""
@@ -172,45 +178,47 @@ arithSuffix (ATInt ITBig) = ".ibig"
 arithSuffix s = error $ "unsupported arithmetic type: " ++ show s
 
 
-stdlib :: [String] -> [LVar] -> Sexp
-stdlib path args = S (A "apply" : S (A "global" : map (A . ('$':)) path) : map cgVar args)
+stdlib :: [String] -> [LExp] -> Sexp
+stdlib path args =
+   S (A "apply" : S (A "global" : map (A . ('$':)) path) : map cgExp args)
 
-pervasive :: String -> [LVar] -> Sexp
+pervasive :: String -> [LExp] -> Sexp
 pervasive f args = stdlib ["Pervasives", f] args
 
-cgOp :: PrimFn -> [LVar] -> Sexp
+cgOp :: PrimFn -> [LExp] -> Sexp
 cgOp LStrConcat [l, r] =
-  S [A "apply", S [A "global", A "$Pervasives", A "$^"], cgVar l, cgVar r]
+  S [A "apply", S [A "global", A "$Pervasives", A "$^"], cgExp l, cgExp r]
 cgOp LStrCons [c, r] =
   S [A "apply", S [A "global", A "$Pervasives", A "$^"],
      S [A "apply", S [A "global", A "$String", A "$make"],
-        KInt 1, cgVar c], cgVar r] -- fixme safety
+        KInt 1, cgExp c], cgExp r] -- fixme safety
 cgOp LWriteStr [_, str] =
-  S [A "apply", S [A "global", A "$Pervasives", A "$print_string"], cgVar str]
+  S [A "apply", S [A "global", A "$Pervasives", A "$print_string"], cgExp str]
 cgOp LReadStr [_] = S [A "apply", S [A "global", A "$Pervasives", A "$read_line"], KInt 0]
-cgOp (LPlus t) args = S (A ("+" ++ arithSuffix t) : map cgVar args)
-cgOp (LMinus t) args = S (A ("-" ++ arithSuffix t) : map cgVar args)
-cgOp (LTimes t) args = S (A ("*" ++ arithSuffix t) : map cgVar args)
-cgOp (LSRem t) args = S (A ("%" ++ arithSuffix t) : map cgVar args)
-cgOp (LEq t) args = S (A ("==" ++ arithSuffix t) : map cgVar args)
-cgOp (LSLt t) args = S (A ("<" ++ arithSuffix t) : map cgVar args)
-cgOp (LSGt t) args = S (A (">" ++ arithSuffix t) : map cgVar args)
-cgOp (LSLe t) args = S (A ("<=" ++ arithSuffix t) : map cgVar args)
-cgOp (LSGe t) args = S (A (">=" ++ arithSuffix t) : map cgVar args)
+cgOp (LPlus t) args = S (A ("+" ++ arithSuffix t) : map cgExp args)
+cgOp (LMinus t) args = S (A ("-" ++ arithSuffix t) : map cgExp args)
+cgOp (LTimes t) args = S (A ("*" ++ arithSuffix t) : map cgExp args)
+cgOp (LSRem t) args = S (A ("%" ++ arithSuffix t) : map cgExp args)
+cgOp (LEq t) args = S (A ("==" ++ arithSuffix t) : map cgExp args)
+cgOp (LSLt t) args = S (A ("<" ++ arithSuffix t) : map cgExp args)
+cgOp (LSGt t) args = S (A (">" ++ arithSuffix t) : map cgExp args)
+cgOp (LSLe t) args = S (A ("<=" ++ arithSuffix t) : map cgExp args)
+cgOp (LSGe t) args = S (A (">=" ++ arithSuffix t) : map cgExp args)
 cgOp (LIntStr ITNative) args = pervasive "string_of_int" args
 cgOp (LIntStr ITBig) args = stdlib ["Z", "to_string"] args
-cgOp (LChInt _) [x] = cgVar x
-cgOp (LIntCh _) [x] = cgVar x
-cgOp (LSExt _ _) [x] = cgVar x -- FIXME
-cgOp (LTrunc _ _) [x] = cgVar x -- FIXME
+cgOp (LChInt _) [x] = cgExp x
+cgOp (LIntCh _) [x] = cgExp x
+cgOp (LSExt _ _) [x] = cgExp x -- FIXME
+cgOp (LTrunc _ _) [x] = cgExp x -- FIXME
 cgOp (LStrInt ITNative) [x] = pervasive "int_of_string" [x]
 cgOp LStrEq args = stdlib ["String", "equal"] args
-cgOp LStrLen [x] = S [A "length.byte", cgVar x]
-cgOp LStrHead [x] = S [A "load.byte", cgVar x, KInt 0]
-cgOp LStrIndex args = S (A "store.byte" : map cgVar args)
-cgOp LStrTail [x] = S [A "apply", S [A "global", A "$String", A "$sub"], cgVar x, KInt 1,
-                       S [A "-", cgOp LStrLen [x], KInt 1]]
-cgOp LStrRev [s] = S [A "apply", A "$%strrev", cgVar s]
+cgOp LStrLen [x] = S [A "length.byte", cgExp x]
+cgOp LStrHead [x] = S [A "load.byte", cgExp x, KInt 0]
+cgOp LStrIndex args = S (A "store.byte" : map cgExp args)
+cgOp LStrTail [x] =
+   S [A "apply", S [A "global", A "$String", A "$sub"], cgExp x
+   , KInt 1, S [A "-", cgOp LStrLen [x], KInt 1]]
+cgOp LStrRev [s] = S [A "apply", A "$%strrev", cgExp s]
 cgOp p _ = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 
 
