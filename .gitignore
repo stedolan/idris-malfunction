@@ -3,6 +3,7 @@ dist
 dist-*
 cabal-dev
 *.o
+*.out
 *.hi
 *.chi
 *.chs.h
@@ -26,4 +27,4 @@ cabal.project.local~
 *.ibc
 
 # malfunction
-*.mlf
+# *.mlf
