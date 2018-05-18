@@ -28,10 +28,13 @@ instance Show Sexp where
     render (KStr s) k = show s ++ " " ++ k
 
 
+okChar :: Char -> Bool
 okChar c = (isAscii c && isAlpha c) || isDigit c || c `elem` ".&|$+-!@#^*~?<>=_"
 
+cgSym :: String -> Sexp
 cgSym s = A ('$' : chars s)
   where
+    chars :: String -> String
     chars (c:cs) | okChar c = c:chars cs
                  | otherwise = "%" ++ show (ord c) ++ "%" ++ chars cs
     chars [] = []
@@ -48,25 +51,31 @@ codegenMalfunction ci = do
   where
     tmp = "idris_malfunction_output.mlf"
 
+shuffle :: [(Name, SDecl)] -> [Sexp] -> [Sexp]
 shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (map toNode decls))
   where
+    toBindings :: [Graph.SCC (Name, SDecl)] -> [Sexp]
     toBindings [] = rest
     toBindings (Graph.AcyclicSCC decl : comps) = cgDecl decl : toBindings comps
     toBindings (Graph.CyclicSCC decls : comps) = S (A "rec" : map cgDecl decls) : toBindings comps
-    
+   
+    toNode :: (Name, SDecl) -> ((Name, SDecl), Name, [Name])
     toNode decl@(name, SFun _ _ _ body) =
       (decl, name, S.toList (free body))
 
+    freev :: LVar -> S.Set Name
     freev (Glob n) = S.singleton n
     freev (Loc k) = S.empty
 
     -- stupid over-approximation, since global names not shadowed
+    
+    free :: SExp -> S.Set Name
     free (SV v) = freev v
     free (SApp _ n _) = S.singleton n
     free (SLet v e1 e2) = S.unions [freev v, free e1, free e2]
     free (SUpdate v e) = S.unions [freev v, free e]
     free (SCon (Just v) _ n vs) = S.unions (freev v : S.singleton n : map freev vs)
-    free (SCon Nothing _ n vs) = S.unions (S.singleton n : map freev vs)    
+    free (SCon Nothing _ n vs) = S.unions (S.singleton n : map freev vs)
     free (SCase _ v cases) = S.unions (freev v : map freeCase cases)
     free (SChkCase v cases) = S.unions (freev v : map freeCase cases)
     free (SProj v _) = freev v
@@ -76,10 +85,12 @@ shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (map toNode d
     free (SNothing) = S.empty
     free (SError s) = S.empty
 
+    freeCase :: SAlt -> S.Set Name
     freeCase (SConCase _ _ n ns e) = S.unions [S.singleton n, S.fromList ns, free e]
     freeCase (SConstCase _ e) = free e
     freeCase (SDefaultCase e) = free e
 
+    prelude :: [Sexp]
     prelude = [
       S [A"$%strrev",
          S [A"lambda", S [A"$s"],
@@ -94,12 +105,14 @@ shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (map toNode d
 cgName :: Name -> Sexp
 cgName = cgSym . showCG
 
+cgVar :: LVar -> Sexp
 cgVar (Loc n) = cgSym (show n)
 cgVar (Glob n) = cgName n
 
 cgDecl :: (Name, SDecl) -> Sexp
 cgDecl (name, SFun _ args i body) = S [cgName name, S [A "lambda", mkargs args, cgExp body]]
   where
+    mkargs :: [Name] -> Sexp
     mkargs [] = S [A "$%unused"]
     mkargs args = S $ map (cgVar . Loc . fst) $ zip [0..] args
 
@@ -119,6 +132,7 @@ cgExp (SOp prim args) = cgOp prim args
 cgExp SNothing = KInt 0
 cgExp (SError s) = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "error: " ++ show s]
 
+cgSwitch :: LVar -> [SAlt] -> Sexp
 cgSwitch e cases =
   S [A "let", S [scr, cgVar e],
      S $ [A "switch", scr] ++
@@ -151,17 +165,20 @@ cgSwitch e cases =
     cgNonTagCase (SConstCase k e) = error $ "unsupported constant selector: " ++ show k
     cgNonTagCase (SDefaultCase e) = [S [A "_", S [A "tag", A "_"], cgExp e]]
     
-
+arithSuffix :: ArithTy -> String
 arithSuffix (ATInt ITNative) = ""
 arithSuffix (ATInt ITChar) = ""
 arithSuffix (ATInt ITBig) = ".ibig"
 arithSuffix s = error $ "unsupported arithmetic type: " ++ show s
 
 
+stdlib :: [String] -> [LVar] -> Sexp
 stdlib path args = S (A "apply" : S (A "global" : map (A . ('$':)) path) : map cgVar args)
 
+pervasive :: String -> [LVar] -> Sexp
 pervasive f args = stdlib ["Pervasives", f] args
 
+cgOp :: PrimFn -> [LVar] -> Sexp
 cgOp LStrConcat [l, r] =
   S [A "apply", S [A "global", A "$Pervasives", A "$^"], cgVar l, cgVar r]
 cgOp LStrCons [c, r] =
@@ -197,6 +214,7 @@ cgOp LStrRev [s] = S [A "apply", A "$%strrev", cgVar s]
 cgOp p _ = S [A "apply", S [A "global", A "$Pervasives", A "$failwith"], KStr $ "unimplemented: " ++ show p]
 
 
+cgConst :: Const -> Sexp
 cgConst (I n) = KInt n
 cgConst (BI n) =  A $ show n ++ ".ibig"
 cgConst (Fl x) = error "no floats"
