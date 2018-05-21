@@ -20,6 +20,7 @@ import System.Directory
 
 
 data Sexp = S [Sexp] | A String | KInt Int | KStr String
+-- shoudln't we have a KBigInt and a KFloat etc?
 
 instance Show Sexp where
   show s = render s "" where
@@ -112,13 +113,13 @@ cgVar (Loc n) = cgSym (show n)
 cgVar (Glob n) = cgName n
 
 cgDecl :: (Name, LDecl) -> Maybe Sexp
-cgDecl _ = Nothing
 cgDecl (name, LFun _ _ args body) =
      Just $ S [cgName name, S [A "lambda", mkargs args, cgExp body]]
     where
      mkargs :: [Name] -> Sexp
      mkargs [] = S [A "$%unused"]
      mkargs args = S $ map (cgSym . show . fst) $ zip [0..] args
+cgDecl _ = Nothing
 
 cgExp :: LExp -> Sexp
 cgExp (LV name) = cgName name
@@ -134,9 +135,10 @@ cgExp (LLam args body) = S [A "lambda", S $ map cgName args, cgExp body]
 cgExp (LProj e idx) = S [A "field", KInt (idx + 1), cgExp e]
 cgExp (LCon _ tag name args) = 
   S (A "block": S [A "tag", KInt (tag `mod` 200)] : KInt tag : map cgExp args)
+  -- why is tag twice? 
 cgExp (LCase _ e cases) = cgSwitch e cases
 cgExp (LConst k) = cgConst k
-cgExp (LForeign fn ret args) = error "no FFI"
+cgExp (LForeign fn ret args) = error "no FFI" -- fixme
 cgExp (LOp prim args) = cgOp prim args
 cgExp LNothing = KInt 0
 cgExp (LError s) =
@@ -153,11 +155,11 @@ cgSwitch e cases =
     scr = A "$%sw"    
     tagcases = concatMap (\c -> case c of
        c@(LConCase tag n args body) -> [(tag, c)]
-       _ -> []) cases
+       _ -> []) cases -- better with filter and then map?
     taggroups =
       map (\cases -> ((fst $ head cases) `mod` 200, map snd cases)) $
       groupBy ((==) `on` ((`mod` 200) . fst)) $
-      sortBy (comparing fst) $ tagcases
+      sortBy (comparing fst) $ tagcases -- why sort?
     cgTagGroup (tagmod, cases) =
       S [S [A "tag", KInt tagmod], cgTagClass cases]
 --    cgTagClass [c] =
