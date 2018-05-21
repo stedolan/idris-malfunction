@@ -122,10 +122,15 @@ cgDecl (name, LFun _ _ args body) =
 
 cgExp :: LExp -> Sexp
 cgExp (LV name) = cgName name
-cgExp (LApp _ fn []) = S [A "apply", cgExp fn, KInt 0]
 -- I think in mlf functions need at least one argument
+cgExp (LApp _ fn []) = S [A "apply", cgExp fn, KInt 0]
 cgExp (LApp _ fn args) = S (A "apply" : cgExp fn : map cgExp args)
+cgExp (LLazyApp name []) = S [A "apply", cgName name , KInt 0] -- fixme
+cgExp (LLazyApp name args) = S (A "apply" : cgName name : map cgExp args) --fixme
+cgExp (LLazyExp e) = cgExp e
+cgExp (LForce e) = cgExp e
 cgExp (LLet name exp body) = S [A "let", S [cgName name, cgExp exp], cgExp body]
+cgExp (LLam args body) = S [A "lambda", S $ map cgName args, cgExp body] 
 cgExp (LProj e idx) = S [A "field", KInt (idx + 1), cgExp e]
 cgExp (LCon _ tag name args) = 
   S (A "block": S [A "tag", KInt (tag `mod` 200)] : KInt tag : map cgExp args)
