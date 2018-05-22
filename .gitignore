@@ -25,6 +25,7 @@ cabal.project.local~
 
 # idris
 *.ibc
+*.lang
 
 # malfunction
-# *.mlf
+*.mlf
