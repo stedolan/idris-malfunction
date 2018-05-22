@@ -14,6 +14,7 @@ import qualified Data.Graph as Graph
 import Data.Maybe(mapMaybe)
 import Data.Function (on)
 import Control.Monad
+import Control.Exception
 
 import System.Process
 import System.Directory
@@ -43,15 +44,24 @@ cgSym s = A ('$' : chars s)
 
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
+  let langDeclarations = liftDecls ci
+  writeFile langFile $ stringify langDeclarations
   writeFile tmp $ show $
-    S (A "module" : shuffle (liftDecls ci)
+    S (A "module" : shuffle langDeclarations
        [S [A "_", S [A "apply", cgName (sMN 0 "runMain"), KInt 0]],
         S [A "export"]])
-  callCommand $ "malfunction compile -o " ++ outputFile ci ++ " " ++ tmp
-  callCommand $ "malfunction fmt " ++ tmp ++ " > " ++ outputFile ci ++ ".mlf"
+  callCommand $ "malfunction fmt " ++ tmp ++ " > " ++ mlfFile
+  catch
+   (callCommand $ "malfunction compile -o " ++ outputFile ci ++ " " ++ mlfFile) handler
+   -- use tmp, it's faster
   removeFile tmp
   where
+    handler :: SomeException -> IO ()
+    handler ex = putStrLn $ "Caught exception: " ++ show ex
     tmp = "idris_malfunction_output.mlf"
+    mlfFile = outputFile ci ++ ".mlf"
+    langFile = outputFile ci ++ ".lang"
+    stringify =  unwords . map (\decl -> show decl ++ "\n\n") 
 
 shuffle :: [(Name, LDecl)] -> [Sexp] -> [Sexp]
 shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (mapMaybe toNode decls))
@@ -108,9 +118,9 @@ shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (mapMaybe toN
 cgName :: Name -> Sexp
 cgName = cgSym . showCG
 
-cgVar :: LVar -> Sexp
-cgVar (Loc n) = cgSym (show n)
-cgVar (Glob n) = cgName n
+-- cgVar :: LVar -> Sexp
+-- cgVar (Loc n) = cgSym (show n)
+-- cgVar (Glob n) = cgName n
 
 cgDecl :: (Name, LDecl) -> Maybe Sexp
 cgDecl (name, LFun _ _ args body) =
@@ -118,7 +128,8 @@ cgDecl (name, LFun _ _ args body) =
     where
      mkargs :: [Name] -> Sexp
      mkargs [] = S [A "$%unused"]
-     mkargs args = S $ map (cgSym . show . fst) $ zip [0..] args
+    --  mkargs args = S $ map (cgSym . show . fst) $ zip [0..] args
+     mkargs args = S $ map cgName args
 cgDecl _ = Nothing
 
 cgExp :: LExp -> Sexp
@@ -167,9 +178,9 @@ cgSwitch e cases =
     cgTagClass cases =
       S (A "switch" : S [A "field", KInt 0, scr] :
          [S [KInt tag, cgProjections c] | c@(LConCase tag _ _ _) <- cases])
-    cgProjections (LConCase tag n args body) =
+    cgProjections (LConCase tag name args body) =
       S ([A "let"] ++
-         zipWith3 (\v i n -> S [cgVar (Loc v), S [A "field", KInt (i+1), scr]]) [0..] [0..] args ++ -- [lv..] lv was used here, lv being the first param of SConstCase
+         zipWith (\i n -> S [cgName n, S [A "field", KInt (i + 1), scr]]) [0..] args ++ 
          [cgExp body])
     cgNonTagCase (LConCase _ _ _ _) = []
     cgNonTagCase (LConstCase (I n) e) = [S [KInt n, cgExp e]]
