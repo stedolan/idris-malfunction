@@ -25,6 +25,7 @@ data Sexp = S [Sexp] | A String | KInt Int | KStr String
 
 instance Show Sexp where
   show s = render s "" where
+    render :: Sexp -> String -> String
     render (S s) k = "(" ++ foldr render (") " ++ k) s
     render (A s) k = s ++ " " ++ k
     render (KInt n) k = show n ++ " " ++ k
@@ -38,9 +39,9 @@ cgSym :: String -> Sexp
 cgSym s = A ('$' : chars s)
   where
     chars :: String -> String
+    chars [] = []
     chars (c:cs) | okChar c = c:chars cs
                  | otherwise = "%" ++ show (ord c) ++ "%" ++ chars cs
-    chars [] = []
 
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
@@ -58,9 +59,12 @@ codegenMalfunction ci = do
   where
     handler :: SomeException -> IO ()
     handler ex = putStrLn $ "Caught exception: " ++ show ex
+
     tmp = "idris_malfunction_output.mlf"
     mlfFile = outputFile ci ++ ".mlf"
     langFile = outputFile ci ++ ".lang"
+
+    stringify :: [(Name, LDecl)] -> String
     stringify =  unwords . map (\decl -> show decl ++ "\n\n") 
 
 shuffle :: [(Name, LDecl)] -> [Sexp] -> [Sexp]
@@ -163,25 +167,37 @@ cgSwitch e cases =
          map cgTagGroup taggroups ++
          concatMap cgNonTagCase cases]
   where
-    scr = A "$%sw"    
+    scr :: Sexp
+    scr = A "$A%sw"    
+
+    tagcases :: [(Int, LAlt)]
     tagcases = concatMap (\c -> case c of
        c@(LConCase tag n args body) -> [(tag, c)]
-       _ -> []) cases -- better with filter and then map?
+       _ -> []) cases -- better filter and then map?
+
+    taggroups :: [(Int, [LAlt])]
     taggroups =
       map (\cases -> ((fst $ head cases) `mod` 200, map snd cases)) $
       groupBy ((==) `on` ((`mod` 200) . fst)) $
       sortBy (comparing fst) $ tagcases -- why sort?
+
+    cgTagGroup ::  (Int, [LAlt]) -> Sexp
     cgTagGroup (tagmod, cases) =
       S [S [A "tag", KInt tagmod], cgTagClass cases]
 --    cgTagClass [c] =
 --      cgProjections c
+    cgTagClass :: [LAlt] -> Sexp
     cgTagClass cases =
       S (A "switch" : S [A "field", KInt 0, scr] :
          [S [KInt tag, cgProjections c] | c@(LConCase tag _ _ _) <- cases])
+
+    cgProjections :: LAlt -> Sexp
     cgProjections (LConCase tag name args body) =
       S ([A "let"] ++
          zipWith (\i n -> S [cgName n, S [A "field", KInt (i + 1), scr]]) [0..] args ++ 
          [cgExp body])
+
+    cgNonTagCase :: LAlt -> [Sexp]
     cgNonTagCase (LConCase _ _ _ _) = []
     cgNonTagCase (LConstCase (I n) e) = [S [KInt n, cgExp e]]
     cgNonTagCase (LConstCase (BI n) e) = [S [KInt (fromInteger n), cgExp e]]
