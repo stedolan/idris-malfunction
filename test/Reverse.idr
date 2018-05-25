@@ -1,9 +1,19 @@
 module Main
 
+myunwords : List String -> String
+myunwords [] = ""
+myunwords [x] = x
+myunwords (x :: xs) = x ++ " " ++ myunwords xs
+
+myunlines : List String -> String
+myunlines [] = ""
+myunlines [x] = x
+myunlines (x :: xs) = x ++ "\n" ++ myunlines xs
+
 main : IO ()
--- main = putStrLn $ show $ List.reverse (the (List Int) [])
 main = do
-    let ioanluca = reverse [1,2,3]
-    putStrLn $ show $ ioanluca
--- main = pure ()
--- main = let x = List.reverse [1..10] in pure ()
+    let justAList = reverse ["hello", "world"]
+    -- putStrLn $ myunwords justAList
+    -- putStrLn $ show $ myunwords justAList
+    -- putStrLn $ myunlines justAList
+    putStrLn $ show $ myunlines justAList

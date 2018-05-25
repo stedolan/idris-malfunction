@@ -159,15 +159,14 @@ cgExp m (LLazyExp e) = cgExp m e
 cgExp m (LForce e) = cgExp m e
 cgExp m (LLet name exp body) = S [A "let", S [cgName name, cgExp m exp], cgExp m body]
 cgExp m (LLam args body) = S [A "lambda", S $ map cgName args, cgExp m body] 
-cgExp m (LProj e idx) = S [A "field", KInt (idx + 1), cgExp m e]
+cgExp m (LProj e idx) = S [A "field", KInt idx, cgExp m e]
 cgExp m (LCon _ tag name args) = 
-  S (A "block": S [A "tag", KInt (tag `mod` 200)] : KInt tag : map (cgExp m) args)
-  -- why is tag twice? wastei
+  S (A "block": S [A "tag", KInt (tag `mod` 200)] : map (cgExp m) args)
 cgExp conMap (LCase _ e cases) = cgSwitch conMap e cases
 cgExp _ (LConst k) = cgConst k
 cgExp _ (LForeign fn ret args) = error "no FFI" -- fixme
 cgExp m (LOp prim args) = cgOp m prim args
-cgExp _ LNothing = KInt 0
+cgExp _ LNothing = KInt 0 -- ????
 cgExp _ (LError s) =
    S [A "apply", S [A "global", A "$Pervasives", A "$failwith"],
     KStr $ "error: " ++ show s]
@@ -200,13 +199,12 @@ cgSwitch conMap e cases =
 
     cgTagGroup ::  (Int, [LAlt]) -> Sexp
     cgTagGroup (tagmod, cases) =
-      S [S [A "tag", KInt tagmod], cgTagClass cases]
+      S $ [S [A "tag", KInt tagmod]] ++ cgTagClass cases
 --    cgTagClass [c] =
 --      cgProjections c
-    cgTagClass :: [LAlt] -> Sexp
+    cgTagClass :: [LAlt] -> [Sexp]
     cgTagClass cases =
-      S (A "switch" : S [A "field", KInt 0, scr] :
-         [S [KInt (getTag n), cgProjections c] | c@(LConCase tag n _ _) <- cases])
+       [cgProjections c | c@(LConCase tag n _ _) <- cases]
 
     cgProjections :: LAlt -> Sexp
     cgProjections (LConCase tag name args body) 
@@ -215,7 +213,7 @@ cgSwitch conMap e cases =
          where
            exp = cgExp conMap body
            fields =
-            zipWith (\i n -> S [cgName n, S [A "field", KInt (i + 1), scr]]) [0..] args
+            zipWith (\i n -> S [cgName n, S [A "field", KInt i, scr]]) [0..] args
                
 
 
