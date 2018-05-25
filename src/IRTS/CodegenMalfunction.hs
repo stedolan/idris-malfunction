@@ -21,7 +21,7 @@ import System.Process
 import System.Directory
 
 
-data Sexp = S [Sexp] | A String | KInt Int | KStr String
+data Sexp = S [Sexp] | A String | KInt Int | KStr String deriving (Eq)
 -- shoudln't we have a KBigInt and a KFloat etc?
 
 instance Show Sexp where
@@ -209,10 +209,15 @@ cgSwitch conMap e cases =
          [S [KInt (getTag n), cgProjections c] | c@(LConCase tag n _ _) <- cases])
 
     cgProjections :: LAlt -> Sexp
-    cgProjections (LConCase tag name args body) =
-      S ([A "let"] ++
-         zipWith (\i n -> S [cgName n, S [A "field", KInt (i + 1), scr]]) [0..] args ++ 
-         [cgExp conMap body])
+    cgProjections (LConCase tag name args body) 
+      | fields == [] = exp
+      | otherwise = S([A "let"] ++ fields ++ [exp])
+         where
+           exp = cgExp conMap body
+           fields =
+            zipWith (\i n -> S [cgName n, S [A "field", KInt (i + 1), scr]]) [0..] args
+               
+
 
     cgNonTagCase :: LAlt -> [Sexp]
     cgNonTagCase (LConCase _ _ _ _) = []
