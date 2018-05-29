@@ -1,10 +1,8 @@
 module IRTS.CodegenMalfunction(codegenMalfunction) where
 
 import Idris.Core.TT
-import qualified Idris.Core.CaseTree as CaseTree
 import IRTS.CodegenCommon
 import IRTS.Lang
-import IRTS.Simplified
 
 import Data.List
 import Data.Char
@@ -14,7 +12,6 @@ import qualified Data.Set as S
 import qualified Data.Graph as Graph
 import Data.Maybe(mapMaybe)
 import Data.Function (on)
-import Control.Monad
 import Control.Exception
 
 import System.Process

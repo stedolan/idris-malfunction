@@ -4,7 +4,6 @@ import Idris.Main
 import Idris.Core.TT
 import Idris.AbsSyntax
 import Idris.ElabDecls
-import Idris.REPL
 import Idris.Options
 
 import IRTS.Compiler
@@ -12,9 +11,6 @@ import IRTS.CodegenMalfunction
 
 import System.Environment
 import System.Exit
-import Control.Monad
-
-import Util.System
 
 data Opts = Opts { inputs :: [FilePath],
                    output :: FilePath }
