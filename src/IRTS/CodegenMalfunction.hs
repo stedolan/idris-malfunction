@@ -1,4 +1,4 @@
-module IRTS.CodegenMalfunction(codegenMalfunction) where
+module IRTS.CodegenMalfunction(codegenMalfunction, evalMalfunction) where
 
 import Idris.Core.TT
 import IRTS.CodegenCommon
@@ -54,16 +54,33 @@ codegenMalfunction ci = do
    (callCommand $ "malfunction compile -o " ++ outputFile ci ++ " " ++ mlfFile) handler
    -- use tmp, it's faster
   removeFile tmp
-  where
-    handler :: SomeException -> IO ()
-    handler ex = putStrLn $ "Caught exception: " ++ show ex
-
+  where 
     tmp = "idris_malfunction_output.mlf"
     mlfFile = outputFile ci ++ ".mlf"
     langFile = outputFile ci ++ ".lang"
 
-    stringify :: [(Name, LDecl)] -> String
-    stringify =  unwords . map (\decl -> show decl ++ "\n\n") 
+handler :: SomeException -> IO ()
+handler ex = putStrLn $ "Caught exception: " ++ show ex
+
+stringify :: [(Name, LDecl)] -> String
+stringify =  unwords . map (\decl -> show decl ++ "\n\n") 
+
+evalMalfunction :: CodeGenerator
+evalMalfunction ci = do
+  let langDeclarations = liftDecls ci
+  writeFile langFile $ stringify langDeclarations
+  writeFile tmp $ show $
+    S (A "let" : shuffle langDeclarations
+       [S [A "apply", cgName (sMN 0 "runMain"), KInt 0]]
+       )
+  callCommand $ "malfunction fmt " ++ tmp ++ " > " ++ mlfFile
+  catch
+   (callCommand $ "cat " ++ tmp ++ " | malfunction eval ") handler
+  removeFile tmp
+  where
+    tmp = "idris_malfunction_output.mlf"
+    mlfFile = outputFile ci ++ ".mlf"
+    langFile = outputFile ci ++ ".lang"
 
 shuffle :: [(Name, LDecl)] -> [Sexp] -> [Sexp]
 shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (mapMaybe toNode decls))

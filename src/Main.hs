@@ -13,7 +13,8 @@ import System.Environment
 import System.Exit
 
 data Opts = Opts { inputs :: [FilePath],
-                   output :: FilePath }
+                   output :: FilePath,
+                   isEval :: Bool }
 
 showUsage = do putStrLn "A code generator which is intended to be called by the compiler, not by a user."
                putStrLn "Usage: idris-malfunction <ibc-files> [-o <output-file>]"
@@ -21,10 +22,11 @@ showUsage = do putStrLn "A code generator which is intended to be called by the 
 
 getOpts :: IO Opts
 getOpts = do xs <- getArgs
-             return $ process (Opts [] "a.out") xs
+             return $ process (Opts [] "a.out" False) xs
   where
     process opts ("-o":o:xs) = process (opts { output = o }) xs
-    process opts ("--interface":xs) = error "this seems important, what do?"
+    process opts ("--interface":xs) = process (opts {isEval = True}) xs
+    -- process opts ("--interface":xs) = error "this seems important, what do?"
     process opts (x:xs) = process (opts { inputs = x:inputs opts }) xs
     process opts [] = opts
 
@@ -33,7 +35,9 @@ malfunction_main opts = do elabPrims
                            loadInputs (inputs opts) Nothing
                            mainProg <- elabMain
                            ir <- compile (Via IBCFormat "malfunction") (output opts) (Just mainProg)
-                           runIO $ codegenMalfunction ir
+                           if isEval opts == False 
+                            then runIO $ codegenMalfunction ir
+                            else runIO $ evalMalfunction ir
 
 main :: IO ()
 main = do opts <- getOpts
