@@ -174,10 +174,11 @@ cgDecl _  _ = Nothing
 
 cgExp :: Map.Map Name (Int, Int) -> LExp -> Sexp
 cgExp m e = 
-  S [A "seq",
-    S [A "apply", print_endline,
-    A $ show $ show e ++ "\n"],
-    cgExp' m e]
+  -- S [A "seq",
+    -- S [A "apply", print_endline,
+    -- A $ show $ show e ++ "\n"],
+    -- cgExp' m e ]
+    cgExp' m e
     where
     print_endline :: Sexp
     print_endline = S [A "global", A "$Pervasives", A "$print_endline"]
@@ -187,20 +188,20 @@ cgExp' :: Map.Map Name (Int, Int) -> LExp -> Sexp
 cgExp' _ (LV name) = cgName name
 cgExp' m (LApp tail fn []) = cgExp m fn
 cgExp' m (LApp tail fn args) = S (A "apply" : cgExp m fn : map (cgExp m) args)
-cgExp' _ (LLazyApp name []) = S [A "apply", cgName name , KInt 0] -- fixme
+cgExp' _ (LLazyApp name []) = S [A "apply", cgName name , KStr "lazy_unused"] -- fixme
 cgExp' m (LLazyApp name args) = S (A "apply" : cgName name : map (cgExp m) args) --fixme
-cgExp' m (LLazyExp e) = cgExp m e
-cgExp' m (LForce e) = cgExp m e
+cgExp' m (LLazyExp e) = cgExp m e --use ocaml lazy
+cgExp' m (LForce e) = cgExp m e --use ocaml force
 cgExp' m (LLet name exp body) = S [A "let", S [cgName name, cgExp m exp], cgExp m body]
 cgExp' m (LLam args body) = S [A "lambda", S $ map cgName args, cgExp m body] 
 cgExp' m (LProj e idx) = S [A "field", KInt idx, cgExp m e]
 cgExp' m (LCon _ tag name args) = 
-  S (A "block": S [A "tag", KInt (tag `mod` 200)] : map (cgExp m) args)
+  S (A "block": S [A "tag", KInt tag] : map (cgExp m) args)
 cgExp' conMap (LCase _ e cases) = cgSwitch conMap e cases
 cgExp' _ (LConst k) = cgConst k
 cgExp' _ (LForeign fn ret args) = error "no FFI" -- fixme
 cgExp' m (LOp prim args) = cgOp m prim args
-cgExp' _ LNothing = KInt 0 -- ????
+cgExp' _ LNothing = KStr "erased"
 cgExp' _ (LError s) =
    S [A "apply", S [A "global", A "$Pervasives", A "$failwith"],
     KStr $ "error: " ++ show s]
@@ -228,8 +229,8 @@ cgSwitch conMap e cases =
 
     taggroups :: [(Int, [LAlt])]
     taggroups =
-      map (\cases -> ((fst $ head cases) `mod` 200, map snd cases)) $
-      groupBy ((==) `on` ((`mod` 200) . fst)) $
+      map (\cases -> (fst $ head cases, map snd cases)) $
+      groupBy ((==) `on` fst) $
       sortBy (comparing fst) $ tagcases -- why sort?
 
     cgTagGroup ::  (Int, [LAlt]) -> Sexp
