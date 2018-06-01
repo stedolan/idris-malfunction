@@ -21,6 +21,7 @@ import System.Directory
 data Sexp = S [Sexp] | A String | KInt Int | KStr String deriving (Eq)
 -- shoudln't we have a KBigInt and a KFloat etc?
 
+
 instance Show Sexp where
   show s = render s "" where
     render :: Sexp -> String -> String
@@ -33,6 +34,7 @@ instance Show Sexp where
 okChar :: Char -> Bool
 okChar c = (isAscii c && isAlpha c) || isDigit c || c `elem` ".&|$+-!@#^*~?<>=_"
 
+
 cgSym :: String -> Sexp
 cgSym s = A ('$' : chars s)
   where
@@ -40,6 +42,7 @@ cgSym s = A ('$' : chars s)
     chars [] = []
     chars (c:cs) | okChar c = c:chars cs
                  | otherwise = "%" ++ show (ord c) ++ "%" ++ chars cs
+
 
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
@@ -59,11 +62,14 @@ codegenMalfunction ci = do
     mlfFile = outputFile ci ++ ".mlf"
     langFile = outputFile ci ++ ".lang"
 
+
 handler :: SomeException -> IO ()
 handler ex = putStrLn $ "Caught exception: " ++ show ex
 
+
 stringify :: [(Name, LDecl)] -> String
 stringify =  unwords . map (\decl -> show decl ++ "\n\n") 
+
 
 evalMalfunction :: CodeGenerator
 evalMalfunction ci = do
@@ -81,8 +87,6 @@ evalMalfunction ci = do
     tmp = "idris_malfunction_output.mlf"
     mlfFile = outputFile ci ++ ".mlf"
     langFile = outputFile ci ++ ".lang"
-
-
 
 
 shuffle :: [(Name, LDecl)] -> [Sexp] -> [Sexp]
@@ -151,9 +155,11 @@ shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (mapMaybe toN
 cgName :: Name -> Sexp
 cgName = cgSym . showCG
 
+
 -- cgVar :: LVar -> Sexp
 -- cgVar (Loc n) = cgSym (show n)
 -- cgVar (Glob n) = cgName n
+
 
 cgDecl :: Map.Map Name (Int, Int) -> (Name, LDecl) -> Maybe Sexp
 cgDecl conMap (name, LFun _ _ args body) =
@@ -165,18 +171,22 @@ cgDecl conMap (name, LFun _ _ args body) =
      mkargs args = S $ map cgName args
 cgDecl _  _ = Nothing
 
+
 cgExp :: Map.Map Name (Int, Int) -> LExp -> Sexp
 cgExp m e = 
   S [A "seq",
-    S [A "apply", S [A "global", A "$Pervasives", A "$print_endline"],
+    S [A "apply", print_endline,
     A $ show $ show e ++ "\n"],
     cgExp' m e]
+    where
+    print_endline :: Sexp
+    print_endline = S [A "global", A "$Pervasives", A "$print_endline"]
+
 
 cgExp' :: Map.Map Name (Int, Int) -> LExp -> Sexp
 cgExp' _ (LV name) = cgName name
--- I think in mlf functions need at least one argument
-cgExp' m (LApp _ fn []) = S [A "apply", cgExp m fn, KInt 0]
-cgExp' m (LApp _ fn args) = S (A "apply" : cgExp m fn : map (cgExp m) args)
+cgExp' m (LApp tail fn []) = cgExp m fn
+cgExp' m (LApp tail fn args) = S (A "apply" : cgExp m fn : map (cgExp m) args)
 cgExp' _ (LLazyApp name []) = S [A "apply", cgName name , KInt 0] -- fixme
 cgExp' m (LLazyApp name args) = S (A "apply" : cgName name : map (cgExp m) args) --fixme
 cgExp' m (LLazyExp e) = cgExp m e
@@ -195,6 +205,7 @@ cgExp' _ (LError s) =
    S [A "apply", S [A "global", A "$Pervasives", A "$failwith"],
     KStr $ "error: " ++ show s]
 
+
 cgSwitch :: Map.Map Name (Int, Int) -> LExp -> [LAlt] -> Sexp
 cgSwitch conMap e cases =
   S [A "let", S [scr, cgExp conMap e],
@@ -203,7 +214,7 @@ cgSwitch conMap e cases =
          concatMap cgNonTagCase cases]
   where
     scr :: Sexp
-    scr = A "$A%sw"    
+    scr = A "$%sw"    
 
     getTag :: Name -> Int
     getTag n = case Map.lookup n conMap of 
@@ -238,8 +249,6 @@ cgSwitch conMap e cases =
            exp = cgExp conMap body
            fields =
             zipWith (\i n -> S [cgName n, S [A "field", KInt i, scr]]) [0..] args
-               
-
 
     cgNonTagCase :: LAlt -> [Sexp]
     cgNonTagCase (LConCase _ _ _ _) = []
@@ -249,6 +258,7 @@ cgSwitch conMap e cases =
     cgNonTagCase (LConstCase k e) = error $ "unsupported constant selector: " ++ show k
     cgNonTagCase (LDefaultCase e) = [S [A "_", S [A "tag", A "_"], cgExp conMap e]]
     
+
 arithSuffix :: ArithTy -> String
 arithSuffix (ATInt ITNative) = ""
 arithSuffix (ATInt ITChar) = ""
@@ -260,8 +270,10 @@ stdlib :: Map.Map Name (Int, Int) -> [String] -> [LExp] -> Sexp
 stdlib  m path args =
    S (A "apply" : S (A "global" : map (A . ('$':)) path) : map (cgExp m) args)
 
+
 pervasive :: Map.Map Name (Int, Int) -> String -> [LExp] -> Sexp
 pervasive m f args = stdlib m ["Pervasives", f] args
+
 
 cgOp :: Map.Map Name (Int, Int) -> PrimFn -> [LExp] -> Sexp
 cgOp m LStrConcat [l, r] =

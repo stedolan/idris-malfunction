@@ -35,9 +35,9 @@ malfunction_main opts = do elabPrims
                            loadInputs (inputs opts) Nothing
                            mainProg <- elabMain
                            ir <- compile (Via IBCFormat "malfunction") (output opts) (Just mainProg)
-                           if isEval opts == False 
-                            then runIO $ codegenMalfunction ir
-                            else runIO $ evalMalfunction ir
+                           runIO $ if isEval opts == False 
+                                    then codegenMalfunction ir
+                                    else evalMalfunction ir
 
 main :: IO ()
 main = do opts <- getOpts
