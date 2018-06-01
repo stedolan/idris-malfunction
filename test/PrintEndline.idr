@@ -2,5 +2,6 @@ module Main
 
 main : IO ()
 main = do
-    let x = show "\n"
-    putStrLn x
+    let x = "aaa"
+    putStrLn $ show x
+    putStrLn $ show "dsa"

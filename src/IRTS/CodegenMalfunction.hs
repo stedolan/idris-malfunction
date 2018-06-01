@@ -195,8 +195,11 @@ cgExp' m (LForce e) = cgExp m e --use ocaml force
 cgExp' m (LLet name exp body) = S [A "let", S [cgName name, cgExp m exp], cgExp m body]
 cgExp' m (LLam args body) = S [A "lambda", S $ map cgName args, cgExp m body] 
 cgExp' m (LProj e idx) = S [A "field", KInt idx, cgExp m e]
-cgExp' m (LCon _ tag name args) = 
+
+cgExp' m (LCon maybeName tag name []) = if tag > 199 then error "tag > 199" else KInt tag
+cgExp' m (LCon maybeName tag name args) = if tag > 199 then error "tag > 199" else 
   S (A "block": S [A "tag", KInt tag] : map (cgExp m) args)
+
 cgExp' conMap (LCase _ e cases) = cgSwitch conMap e cases
 cgExp' _ (LConst k) = cgConst k
 cgExp' _ (LForeign fn ret args) = error "no FFI" -- fixme
@@ -215,27 +218,33 @@ cgSwitch conMap e cases =
          concatMap cgNonTagCase cases]
   where
     scr :: Sexp
-    scr = A "$%sw"    
+    scr = A "$%matchOn"    
 
     getTag :: Name -> Int
     getTag n = case Map.lookup n conMap of 
           Just (tag, arity) -> tag
           Nothing -> error "This should never happen"
 
-    tagcases :: [(Int, LAlt)]
+    oneOfThree (a, _, _) = a
+    twoOfThree (_, a, _) = a
+    threeOfThree (_, _, a) = a
+
+    tagcases :: [(Int, LAlt, Bool)]
     tagcases = concatMap (\c -> case c of
-       c@(LConCase tag n args body) -> [(getTag n, c)]
+       c@(LConCase tag n [] body) -> [(getTag n, c, False)]
+       c@(LConCase tag n args body) -> [(getTag n, c, True)]
        _ -> []) cases -- better filter and then map?
 
-    taggroups :: [(Int, [LAlt])]
+    taggroups :: [(Int, [LAlt], Bool)]
     taggroups =
-      map (\cases -> (fst $ head cases, map snd cases)) $
-      groupBy ((==) `on` fst) $
-      sortBy (comparing fst) $ tagcases -- why sort?
+      map (\cases -> (oneOfThree $ head cases, map twoOfThree cases, threeOfThree $ head cases)) $
+      groupBy ((==) `on` oneOfThree) $
+      sortBy (comparing oneOfThree) $ tagcases -- why sort?
 
-    cgTagGroup ::  (Int, [LAlt]) -> Sexp
-    cgTagGroup (tagmod, cases) =
-      S $ [S [A "tag", KInt tagmod]] ++ cgTagClass cases
+    cgTagGroup ::  (Int, [LAlt], Bool) -> Sexp
+    cgTagGroup (tagmod, cases, isBlock)
+     | isBlock = S $ [S [A "tag", KInt tagmod]] ++ cgTagClass cases
+     | otherwise = S $ [KInt tagmod] ++ cgTagClass cases
 --    cgTagClass [c] =
 --      cgProjections c
     cgTagClass :: [LAlt] -> [Sexp]
@@ -254,7 +263,7 @@ cgSwitch conMap e cases =
     cgNonTagCase :: LAlt -> [Sexp]
     cgNonTagCase (LConCase _ _ _ _) = []
     cgNonTagCase (LConstCase (I n) e) = [S [KInt n, cgExp conMap e]]
-    cgNonTagCase (LConstCase (BI n) e) = [S [KInt (fromInteger n), cgExp conMap e]]
+    cgNonTagCase (LConstCase (BI n) e) = [S [KInt (fromInteger n), cgExp conMap e]] --fixme?
     cgNonTagCase (LConstCase (Ch c) e) = [S [KInt (ord c), cgExp conMap e]]
     cgNonTagCase (LConstCase k e) = error $ "unsupported constant selector: " ++ show k
     cgNonTagCase (LDefaultCase e) = [S [A "_", S [A "tag", A "_"], cgExp conMap e]]

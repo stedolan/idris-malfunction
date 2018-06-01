@@ -13,7 +13,7 @@ myunlines (x :: xs) = x ++ "\n" ++ myunlines xs
 main : IO ()
 main = do
     let justAList = reverse ["hello", "world"]
-    -- putStrLn $ myunwords justAList
-    -- putStrLn $ show $ myunwords justAList
-    -- putStrLn $ myunlines justAList
+    putStrLn $ myunwords justAList
+    putStrLn $ show $ myunwords justAList
+    putStrLn $ myunlines justAList
     putStrLn $ show $ myunlines justAList
