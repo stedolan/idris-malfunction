@@ -175,9 +175,9 @@ cgDecl _  _ = Nothing
 cgExp :: Map.Map Name (Int, Int) -> LExp -> Sexp
 cgExp m e = 
   -- S [A "seq",
-    -- S [A "apply", print_endline,
-    -- A $ show $ show e ++ "\n"],
-    -- cgExp' m e ]
+  --   S [A "apply", print_endline,
+  --   A $ show $ show e ++ "\n"],
+  --   cgExp' m e ]
     cgExp' m e
     where
     print_endline :: Sexp
@@ -188,10 +188,19 @@ cgExp' :: Map.Map Name (Int, Int) -> LExp -> Sexp
 cgExp' _ (LV name) = cgName name
 cgExp' m (LApp tail fn []) = cgExp m fn
 cgExp' m (LApp tail fn args) = S (A "apply" : cgExp m fn : map (cgExp m) args)
-cgExp' _ (LLazyApp name []) = S [A "apply", cgName name , KStr "lazy_unused"] -- fixme
-cgExp' m (LLazyApp name args) = S (A "apply" : cgName name : map (cgExp m) args) --fixme
-cgExp' m (LLazyExp e) = cgExp m e --use ocaml lazy
-cgExp' m (LForce e) = cgExp m e --use ocaml force
+
+cgExp' _ (LLazyApp name []) =
+   S [A "lambda", S [A "$lazy_unused"], cgName name]
+cgExp' m (LLazyApp name args) =
+   S [A "lambda", S [A "$lazy_unused_mult"],
+     S (A "apply" : cgName name : map (cgExp m) args)]
+cgExp' m (LLazyExp e) =
+  --  S [A "lambda", S [A "$delay"], cgExp m e]
+  error "LLazyExp? ?????????"
+cgExp' m (LForce e) =
+   S [A "apply", cgExp m e, KStr "force_unused"]
+  -- cgExp m e
+
 cgExp' m (LLet name exp body) = S [A "let", S [cgName name, cgExp m exp], cgExp m body]
 cgExp' m (LLam args body) = S [A "lambda", S $ map cgName args, cgExp m body] 
 cgExp' m (LProj e idx) = S [A "field", KInt idx, cgExp m e]
@@ -293,7 +302,7 @@ cgOp m LStrCons [c, r] =
      S [A "apply", S [A "global", A "$String", A "$make"],
         KInt 1, cgExp m c], cgExp m r] -- fixme safety
 cgOp m LWriteStr [_, str] =
-  S [A "apply", S [A "global", A "$Pervasives", A "$print_string"], cgExp m str]
+  S [A "apply", S [A "global", A "$Pervasives", A "$print_endline"], cgExp m str]
 cgOp m LReadStr [_] =
    S [A "apply", S [A "global", A "$Pervasives", A "$read_line"], KInt 0]
 cgOp m (LPlus t) args = S (A ("+" ++ arithSuffix t) : map  (cgExp m) args)

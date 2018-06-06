@@ -1,0 +1,88 @@
+force{ Main.main(____) }
+
+Main.main(____)
+
+____
+
+Main.main
+
+let {in_2} = LWriteStr({in_0}, LStrConcat(LStrConcat("[", LStrConcat(Prelude.Show.Prelude.Show.List a implementation of Prelude.Show.Show, method show, show'(____, ____, Main.{main_1}(), "", Prelude.Stream.take(____, 10, Prelude.Stream.::(1, Main.{main_3}|()))), "]")), "\n")) in MkUnit()
+
+LWriteStr({in_0}, LStrConcat(LStrConcat("[", LStrConcat(Prelude.Show.Prelude.Show.List a implementation of Prelude.Show.Show, method show, show'(____, ____, Main.{main_1}(), "", Prelude.Stream.take(____, 10, Prelude.Stream.::(1, Main.{main_3}|()))), "]")), "\n"))
+
+LStrConcat(LStrConcat("[", LStrConcat(Prelude.Show.Prelude.Show.List a implementation of Prelude.Show.Show, method show, show'(____, ____, Main.{main_1}(), "", Prelude.Stream.take(____, 10, Prelude.Stream.::(1, Main.{main_3}|()))), "]")), "\n")
+
+"\n"
+
+LStrConcat("[", LStrConcat(Prelude.Show.Prelude.Show.List a implementation of Prelude.Show.Show, method show, show'(____, ____, Main.{main_1}(), "", Prelude.Stream.take(____, 10, Prelude.Stream.::(1, Main.{main_3}|()))), "]"))
+
+LStrConcat(Prelude.Show.Prelude.Show.List a implementation of Prelude.Show.Show, method show, show'(____, ____, Main.{main_1}(), "", Prelude.Stream.take(____, 10, Prelude.Stream.::(1, Main.{main_3}|()))), "]")
+
+"]"
+
+Prelude.Show.Prelude.Show.List a implementation of Prelude.Show.Show, method show, show'(____, ____, Main.{main_1}(), "", Prelude.Stream.take(____, 10, Prelude.Stream.::(1, Main.{main_3}|())))
+
+Prelude.Stream.take(____, 10, Prelude.Stream.::(1, Main.{main_3}|()))
+
+Prelude.Stream.::(1, Main.{main_3}|())
+
+Main.{main_3}|()
+
+1
+
+10
+
+____
+
+Prelude.Stream.take
+
+case ({arg_1}) of 
+	| 0 => Prelude.List.Nil()
+	| _ => case ({arg_2}) of 
+	    | Prelude.Stream.::({in_3}, {in_4}) => Prelude.List.::({in_3}, Prelude.Stream.take(____, LMinus (ATInt ITBig)({arg_1}, 1), force{ {in_4} }))
+
+{arg_1}
+
+case ({arg_2}) of 
+	| Prelude.Stream.::({in_3}, {in_4}) => Prelude.List.::({in_3}, Prelude.Stream.take(____, LMinus (ATInt ITBig)({arg_1}, 1), force{ {in_4} }))
+
+{arg_2}
+
+Prelude.List.::({in_3}, Prelude.Stream.take(____, LMinus (ATInt ITBig)({arg_1}, 1), force{ {in_4} }))
+
+Prelude.Stream.take(____, LMinus (ATInt ITBig)({arg_1}, 1), force{ {in_4} })
+
+force{ {in_4} }
+
+{in_4}
+
+LMinus (ATInt ITBig)({arg_1}, 1)
+
+1
+
+{arg_1}
+
+____
+
+Prelude.Stream.take
+
+case ({arg_1}) of 
+	| 0 => Prelude.List.Nil()
+	| _ => case ({arg_2}) of 
+	    | Prelude.Stream.::({in_3}, {in_4}) => Prelude.List.::({in_3}, Prelude.Stream.take(____, LMinus (ATInt ITBig)({arg_1}, 1), force{ {in_4} }))
+
+{arg_1}
+
+case ({arg_2}) of 
+	| Prelude.Stream.::({in_3}, {in_4}) => Prelude.List.::({in_3}, Prelude.Stream.take(____, LMinus (ATInt ITBig)({arg_1}, 1), force{ {in_4} }))
+
+{arg_2}
+
+Prelude.List.::({in_3}, Prelude.Stream.take(____, LMinus (ATInt ITBig)({arg_1}, 1), force{ {in_4} }))
+
+Prelude.Stream.take(____, LMinus (ATInt ITBig)({arg_1}, 1), force{ {in_4} })
+
+force{ {in_4} }
+
+{in_4}
+

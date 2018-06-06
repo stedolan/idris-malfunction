@@ -17,3 +17,4 @@ main = do
     putStrLn $ show $ myunwords justAList
     putStrLn $ myunlines justAList
     putStrLn $ show $ myunlines justAList
+    putStrLn $ show $ if True then [1..10] else [20,9..1]
