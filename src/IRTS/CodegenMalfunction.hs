@@ -20,16 +20,18 @@ import System.Directory
 
 
 
-data Sexp = S [Sexp] | A String | KInt Int | KStr String deriving (Eq)
--- shoudln't we have a KBigInt and a KFloat etc?
+data Sexp = S [Sexp] | A String | KInt Int
+            | KBigInt Integer | KStr String
+             deriving (Eq)
 
 instance Show Sexp where
-  show s = render s "" where
+  show sexp = render sexp "" where
     render :: Sexp -> String -> String
-    render (S s) k = "(" ++ foldr render (") " ++ k) s
-    render (A s) k = s ++ " " ++ k
-    render (KInt n) k = show n ++ " " ++ k
-    render (KStr s) k = show s ++ " " ++ k
+    render (S s      ) k = "(" ++ foldr render (") " ++ k) s
+    render (A s      ) k = s ++ " " ++ k
+    render (KInt n   ) k = show n ++ " " ++ k
+    render (KStr s   ) k = show s ++ " " ++ k
+    render (KBigInt s) k = show s ++ ".ibig " ++ k
 
 
 
@@ -99,7 +101,8 @@ codegenMalfunction ci = do
   writeFile tmp $ show $ S
     (A "module" : shuffle
       langDeclarations
-      [ S [A "_", S [A "apply", cgName (sMN 0 "runMain"), KInt 0]]
+      [ S
+        [A "_", S [A "apply", cgName (sMN 0 "runMain"), KStr "unused_runMain"]]
       , S [A "export"]
       ]
     )
@@ -120,8 +123,9 @@ evalMalfunction ci = do
   let langDeclarations = liftDecls ci
   writeFile langFile $ stringify langDeclarations
   writeFile tmp $ show $ S
-    (A "let" : shuffle langDeclarations
-                       [S [A "apply", cgName (sMN 0 "runMain"), KInt 0]]
+    (A "let" : shuffle
+      langDeclarations
+      [S [A "apply", cgName (sMN 0 "runMain"), KStr "unused_runMain"]]
     )
   callCommand $ "malfunction fmt " ++ tmp ++ " > " ++ mlfFile
   catch (callCommand $ "cat " ++ tmp ++ " | malfunction eval ") handler
@@ -397,7 +401,7 @@ cgSwitch e cases = do
     pure [S [KInt n, a]]
   cgNonTagCase (LConstCase (BI n) e) = do
     a <- cgExp e
-    pure [S [KInt (fromInteger n), a]] --fixme?
+    pure [S [KInt (fromInteger n), a]] --FIXME if use KBigInt compiler cries
   cgNonTagCase (LConstCase (Ch c) e) = do
     a <- cgExp e
     pure [S [KInt (ord c), a]]
@@ -534,7 +538,7 @@ cgOp p _ = pure $ S
 
 cgConst :: Const -> Translate Sexp
 cgConst (I   n) = pure $ KInt n
-cgConst (BI  n) = pure $ A $ show n ++ ".ibig"
+cgConst (BI  n) = pure $ KBigInt n
 cgConst (Fl  x) = crashWith "no floats"
 cgConst (Ch  i) = pure $ KInt (ord i)
 cgConst (Str s) = pure $ KStr s
