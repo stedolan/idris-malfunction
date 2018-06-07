@@ -22,7 +22,7 @@ data Opts = Opts { inputs :: [FilePath],
 
 showUsage = do putStrLn "A code generator which is intended to be called by the compiler, not by a user."
                putStrLn "Usage: idris-malfunction <ibc-files> [-o <output-file>]"
-               exitWith ExitSuccess
+               exitSuccess
 
 
 
@@ -43,7 +43,7 @@ malfunction_main opts = do elabPrims
                            loadInputs (inputs opts) Nothing
                            mainProg <- elabMain
                            ir <- compile (Via IBCFormat "malfunction") (output opts) (Just mainProg)
-                           runIO $ if isEval opts == False 
+                           runIO $ if not (isEval opts) 
                                     then codegenMalfunction ir
                                     else evalMalfunction ir
 

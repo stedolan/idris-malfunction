@@ -62,7 +62,7 @@ instance Monad Translate where
 
 
 runTranslate :: Translate a -> Map.Map Name (Int, Int) -> Either String a
-runTranslate (MkTrn t) m = t m
+runTranslate (MkTrn t) = t
 
 
 
@@ -314,7 +314,7 @@ cgSwitch e cases = do
     scr :: Sexp
     scr = A "$%matchOn"    
 
-    getTag n m = do 
+    getTag n m = 
       case Map.lookup n m of 
           Just (tag, arity) -> tag
           Nothing -> error "This should never happen"
@@ -327,8 +327,8 @@ cgSwitch e cases = do
     tagcases = do
        m <- ask
        pure $ concatMap (\c -> case c of
-        c@(LConCase _ n [] body) -> [(getTag n m, c, False)]
-        c@(LConCase _ n args body) -> [(getTag n m, c, True)]
+        (LConCase _ n [] _) -> [(getTag n m, c, False)]
+        (LConCase _ n _ _) -> [(getTag n m, c, True)]
         _ -> []) cases -- better filter and then map?
 
     taggroups :: Translate [(Int, [LAlt], Bool)]
@@ -344,9 +344,9 @@ cgSwitch e cases = do
     cgTagGroup (tagmod, cases, isBlock) = do
       tgs <- cgTagClass cases
       if isBlock then 
-        pure $ S $ [S [A "tag", KInt tagmod]] ++ tgs
+        pure $ S $ S [A "tag", KInt tagmod] : tgs
                  else 
-        pure $ S $ [KInt tagmod] ++ tgs
+        pure $ S $ KInt tagmod : tgs
 
     cgTagClass :: [LAlt] -> Translate [Sexp]
     cgTagClass cases = do
@@ -357,12 +357,12 @@ cgSwitch e cases = do
     cgProjections (LConCase tag name args body) = do
       let fields = zipWith (\i n -> S [cgName n, S [A "field", KInt i, scr]]) [0..] args
       exp <- cgExp body
-      if fields == []
+      if null fields
          then pure exp
          else pure $ S $ [A "let"] ++ fields ++ [exp]
 
     cgNonTagCase :: LAlt -> Translate [Sexp]
-    cgNonTagCase (LConCase _ _ _ _) = mapM pure []
+    cgNonTagCase LConCase{} = mapM pure []
     cgNonTagCase (LConstCase (I n) e) = do 
       a <- cgExp e
       pure [S [KInt n, a]]
@@ -396,7 +396,7 @@ stdlib path args = do
 
 
 pervasive :: String -> [LExp] -> Translate Sexp
-pervasive f args = stdlib ["Pervasives", f] args
+pervasive f = stdlib ["Pervasives", f]
 
 
 
@@ -475,7 +475,7 @@ cgOp LStrHead [x] = do
 
 cgOp LStrIndex args = do
   as <- mapM cgExp args
-  pure $ S $ [A "store.byte"] ++ as
+  pure $ S $ A "store.byte" : as
 
 cgOp LStrTail [x] = do
   e <- cgExp x
