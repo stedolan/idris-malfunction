@@ -12,13 +12,19 @@ import IRTS.CodegenMalfunction
 import System.Environment
 import System.Exit
 
+
+
 data Opts = Opts { inputs :: [FilePath],
                    output :: FilePath,
                    isEval :: Bool }
 
+
+
 showUsage = do putStrLn "A code generator which is intended to be called by the compiler, not by a user."
                putStrLn "Usage: idris-malfunction <ibc-files> [-o <output-file>]"
                exitWith ExitSuccess
+
+
 
 getOpts :: IO Opts
 getOpts = do xs <- getArgs
@@ -30,6 +36,8 @@ getOpts = do xs <- getArgs
     process opts (x:xs) = process (opts { inputs = x:inputs opts }) xs
     process opts [] = opts
 
+
+
 malfunction_main :: Opts -> Idris ()
 malfunction_main opts = do elabPrims
                            loadInputs (inputs opts) Nothing
@@ -38,6 +46,8 @@ malfunction_main opts = do elabPrims
                            runIO $ if isEval opts == False 
                                     then codegenMalfunction ir
                                     else evalMalfunction ir
+
+
 
 main :: IO ()
 main = do opts <- getOpts
