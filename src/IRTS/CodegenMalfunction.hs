@@ -39,30 +39,30 @@ newtype Translate a =
 
 
 instance Functor Translate where
-  fmap f (MkTrn g) = MkTrn $
-                       \m -> case g m of
+  fmap f (MkTrn t) = MkTrn $
+                       \m -> case t m of
                          Right a -> Right (f a)
                          Left err -> Left err
 
 instance Applicative Translate where
-  pure x =  MkTrn $ \m -> Right x
-  MkTrn f <*> MkTrn g = MkTrn $
+  pure a =  MkTrn $ \m -> Right a
+  MkTrn f <*> MkTrn t = MkTrn $
                       \m -> case f m of 
-                         Right f -> case g m of
+                         Right f -> case t m of
                            Right a -> Right (f a)
                            Left err -> Left err
                          Left err -> Left err
 
 instance Monad Translate where
-  MkTrn g >>= f = MkTrn $
-                      \m -> case g m of 
+  MkTrn t >>= f = MkTrn $
+                      \m -> case t m of 
                          Right a -> let MkTrn h = f a in h m
                          Left err -> Left err
 
 
 
 runTranslate :: Translate a -> Map.Map Name (Int, Int) -> Either String a
-runTranslate (MkTrn f) m = f m
+runTranslate (MkTrn t) m = t m
 
 
 
@@ -141,29 +141,24 @@ stringify =  unwords . map (\decl -> show decl ++ "\n\n")
 
 
 shuffle :: [(Name, LDecl)] -> [Sexp] -> [Sexp]
-shuffle decls rest = prelude ++ toBindings (Graph.stronglyConnComp (mapMaybe toNode decls))
+shuffle decls rest =
+   prelude ++ toBindings (Graph.stronglyConnComp (mapMaybe toNode decls))
   where
-    conTagArity :: Map.Map Name (Int, Int)
-    conTagArity = Map.fromList $ map makeMap conDecls
-      where 
-        conDecls :: [(Name, LDecl)]
-        conDecls = filter (\x -> case x of
-                                  (_, LConstructor _ _ _) -> True
-                                  _ -> False) decls
-        makeMap :: (Name, LDecl) -> (Name, (Int, Int))
-        makeMap (_, LConstructor name tag arity) =  (name, (tag, arity))
+    nameTagMap :: Map.Map Name (Int, Int)
+    nameTagMap = Map.fromList 
+          [(name, (tag, arity)) | (_, LConstructor name tag arity) <- decls]
 
     toBindings :: [Graph.SCC (Name, LDecl)] -> [Sexp]
     toBindings [] = rest
     toBindings (Graph.AcyclicSCC decl : comps) =
-      case runTranslate (cgDecl decl) conTagArity of
+      case runTranslate (cgDecl decl) nameTagMap of
         Right (Just sexp) -> sexp : toBindings comps
         Right Nothing -> toBindings comps
         Left err -> error err
-    toBindings (Graph.CyclicSCC decls : comps) = 
-       S (A "rec" : mapMaybe go decls) : toBindings comps
-       where go d = case runTranslate (cgDecl d) conTagArity of
-                      Right e -> e
+    toBindings (Graph.CyclicSCC dcls : comps) = 
+       S (A "rec" : mapMaybe go dcls) : toBindings comps
+       where go decl = case runTranslate (cgDecl decl) nameTagMap of
+                      Right maybeSexp -> maybeSexp
                       Left err -> error err
    
     toNode :: (Name, LDecl) -> Maybe ((Name, LDecl), Name, [Name])
@@ -300,9 +295,9 @@ cgExp' (LError s) =
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f [] = pure []
-concatMapM f (x : xs) = do
-  bs <- f x
-  rs <- concatMapM f xs
+concatMapM f (a : as) = do
+  bs <- f a
+  rs <- concatMapM f as
   pure $ bs ++ rs
 
 
