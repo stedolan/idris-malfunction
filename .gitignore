@@ -29,3 +29,6 @@ cabal.project.local~
 
 # malfunction
 *.mlf
+
+# general
+*.log
