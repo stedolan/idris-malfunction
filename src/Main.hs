@@ -8,6 +8,7 @@ import Idris.Options
 
 import IRTS.Compiler
 import IRTS.CodegenMalfunction
+import IRTS.CodegenCommon
 
 import System.Environment
 import System.Exit
@@ -16,7 +17,7 @@ import System.Exit
 
 data Opts = Opts { inputs :: [FilePath],
                    output :: FilePath,
-                   isEval :: Bool }
+                   interface :: Bool }
 
 
 
@@ -33,8 +34,7 @@ getOpts :: IO Opts
 getOpts = process (Opts [] "a.out" False) <$> getArgs
  where
   process opts ("-o" : o      : xs) = process (opts { output = o }) xs
-  process opts ("--interface" : xs) = process (opts { isEval = True }) xs
-  -- process opts ("--interface":xs) = error "this seems important, what do?"
+  process opts ("--interface" : xs) = process (opts { interface = True }) xs
   process opts (x : xs) = process (opts { inputs = x : inputs opts }) xs
   process opts []                   = opts
 
@@ -46,8 +46,7 @@ malfunction_main opts = do
   loadInputs (inputs opts) Nothing
   mainProg <- elabMain
   ir <- compile (Via IBCFormat "malfunction") (output opts) (Just mainProg)
-  runIO
-    $ if not (isEval opts) then codegenMalfunction ir else evalMalfunction ir
+  runIO $ codegenMalfunction (ir { interfaces = interface opts })
 
 
 

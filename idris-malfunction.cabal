@@ -20,3 +20,4 @@ executable idris-codegen-malfunction
   build-depends:       idris
   build-depends:       process
   build-depends:       directory
+  build-depends:       filepath

@@ -1,4 +1,4 @@
-module IRTS.CodegenMalfunction(codegenMalfunction, evalMalfunction) where
+module IRTS.CodegenMalfunction(codegenMalfunction) where
 
 import Idris.Core.TT
 import IRTS.CodegenCommon
@@ -17,6 +17,7 @@ import Control.Monad(mapM)
 
 import System.Process
 import System.Directory
+import System.FilePath
 
 
 
@@ -96,58 +97,44 @@ cgSym s = A ('$' : chars s)
 
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
-  let langDeclarations = liftDecls ci
   writeFile langFile $ stringify langDeclarations
-  writeFile tmp $ show $ S
-    (A "module" : shuffle
-      langDeclarations
-      [ S
-        [A "_", S [A "apply", cgName (sMN 0 "runMain"), KStr "unused_runMain"]]
-      , S [A "export"]
-      ]
-    )
-  callCommand $ "malfunction fmt " ++ tmp ++ " > " ++ mlfFile
-  catch
-    (callCommand $ "malfunction compile -o " ++ outputFile ci ++ " " ++ mlfFile)
-    handler
-   -- use tmp, it's faster
+  writeFile tmp $ show $ if interfaces ci then evalExp else compileExp
+  callCommand fmtCommand
+  catch (callCommand $ if interfaces ci then evalCommand else compileCommand)
+        handler
   removeFile tmp
  where
-  mlfFile  = outputFile ci ++ ".mlf"
-  langFile = outputFile ci ++ ".lang"
+  langDeclarations = liftDecls ci
 
+  outFile          = outputFile ci
+  mlfFile          = replaceExtensionIf outFile ".o" ".mlf"
+  langFile         = replaceExtensionIf outFile ".o" ".lang"
+  tmp              = "idris_malfunction_output.mlf"
 
+  fmtCommand       = "malfunction fmt " ++ tmp ++ " > " ++ mlfFile
+  evalCommand      = "cat " ++ mlfFile ++ " | malfunction eval"
+  compileCommand   = "malfunction compile -o " ++ outFile ++ " " ++ tmp
 
-evalMalfunction :: CodeGenerator
-evalMalfunction ci = do
-  let langDeclarations = liftDecls ci
-  writeFile langFile $ stringify langDeclarations
-  writeFile tmp $ show $ S
-    (A "let" : shuffle
-      langDeclarations
-      [S [A "apply", cgName (sMN 0 "runMain"), KStr "unused_runMain"]]
-    )
-  callCommand $ "malfunction fmt " ++ tmp ++ " > " ++ mlfFile
-  catch (callCommand $ "cat " ++ tmp ++ " | malfunction eval ") handler
-  removeFile tmp
- where
-  mlfFile  = outputFile ci ++ ".mlf"
-  langFile = outputFile ci ++ ".lang"
+  runMain = S [A "apply", cgName (sMN 0 "runMain"), KStr "unused_runMain"]
 
+  compileExp =
+    S
+      ( A "module"
+      : shuffle langDeclarations [S [A "_", runMain], S [A "export"]]
+      )
 
+  evalExp = S (A "let" : shuffle langDeclarations [runMain])
 
-tmp :: FilePath
-tmp = "idris_malfunction_output.mlf"
+  handler :: SomeException -> IO ()
+  handler ex = putStrLn $ "Caught exception: " ++ show ex
 
+  stringify :: [(Name, LDecl)] -> String
+  stringify = unwords . map (\decl -> show decl ++ "\n\n")
 
-
-handler :: SomeException -> IO ()
-handler ex = putStrLn $ "Caught exception: " ++ show ex
-
-
-
-stringify :: [(Name, LDecl)] -> String
-stringify = unwords . map (\decl -> show decl ++ "\n\n")
+replaceExtensionIf :: FilePath -> String -> String -> FilePath
+replaceExtensionIf file curr new = case stripExtension curr file of
+  Just fileNoExt -> fileNoExt <.> new
+  _              -> file <.> new
 
 
 
@@ -248,9 +235,7 @@ cgDecl _ = pure Nothing
 cgExp :: LExp -> Translate Sexp
 cgExp e = do
   -- a <- cgExp' e
-  -- pure $ S [A "seq",
-  --   S [A "apply", print_endline,
-  --   A $ show $ show e ++ "\n"], a]
+  -- pure $ S [A "seq", S [A "apply", print_endline, A $ show $ show e ++ "\n"], a]
   cgExp' e
  where
   print_endline :: Sexp
