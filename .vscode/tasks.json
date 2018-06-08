@@ -4,13 +4,70 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "stack build",
+            "label": "stack install",
             "type": "shell",
             "command": "stack install",
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "shared"
             }
+        },
+        {
+            "label": "idrmlf compile",
+            "type": "shell",
+            "command": "idris ${relativeFile} --codegen malfunction -o test/${fileBasenameNoExtension}.o && test/${fileBasenameNoExtension}.o",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated"
+            }
+        },{
+            "label": "idrmlf eval",
+            "type": "shell",
+            "command": "idris ${relativeFile} --codegen malfunction --interface -o test/${fileBasenameNoExtension}",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "idrmlf run",
+            "type": "shell",
+            "command": "test/${fileBasenameNoExtension}.o",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "malfunction compile",
+            "type": "shell",
+            "command": "malfunction compile ${relativeFile} -o test/${fileBasenameNoExtension}_1.o && test/${fileBasenameNoExtension}_1.o",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "clean test",
+            "type": "shell",
+            "command": "rm test/*.ibc test/*.o test/*.lang test/*.mlf",
+            "presentation": {
+                "reveal": "never",
+            },
         }
     ]
 }
