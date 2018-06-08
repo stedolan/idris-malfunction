@@ -20,6 +20,7 @@ data Opts = Opts { inputs :: [FilePath],
 
 
 
+showUsage :: IO a
 showUsage = do
   putStrLn
     "A code generator which is intended to be called by the compiler, not by a user."
