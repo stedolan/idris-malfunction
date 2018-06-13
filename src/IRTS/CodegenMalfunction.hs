@@ -13,7 +13,7 @@ import qualified Data.Graph as Graph
 import Data.Maybe(mapMaybe)
 import Data.Function (on)
 import Control.Exception
-import Control.Monad(mapM)
+import Control.Monad(mapM, ap)
 
 import System.Process
 import System.Directory
@@ -49,12 +49,7 @@ instance Functor Translate where
 
 instance Applicative Translate where
   pure a =  MkTrn $ \m -> Right a
-  MkTrn f <*> MkTrn t = MkTrn $
-                      \m -> case f m of
-                         Right f -> case t m of
-                           Right a -> Right (f a)
-                           Left err -> Left err
-                         Left err -> Left err
+  (<*>) = ap
 
 instance Monad Translate where
   MkTrn t >>= f = MkTrn $
@@ -107,15 +102,15 @@ codegenMalfunction ci = do
   langDeclarations = liftDecls ci
 
   outFile          = outputFile ci
-  mlfFile          = replaceExtensionIf outFile ".o" ".mlf"
+  mlfFile          = replaceExtensionIf outFile ".o" ".x.mlf"
   langFile         = replaceExtensionIf outFile ".o" ".lang"
   tmp              = "idris_malfunction_output.mlf"
 
   fmtCommand       = "malfunction fmt " ++ tmp ++ " > " ++ mlfFile
   evalCommand      = "cat " ++ mlfFile ++ " | malfunction eval"
-  compileCommand   = "malfunction compile -o " ++ outFile ++ " " ++ tmp
+  compileCommand   = "malfunction compile -o " ++ outFile ++ " " ++ mlfFile
 
-  runMain = S [A "apply", cgName (sMN 0 "runMain"), KStr "unused_runMain"]
+  runMain          = cgApp (cgName (sMN 0 "runMain")) [KStr "unused_runMain"]
 
   compileExp =
     S
@@ -223,11 +218,7 @@ cgName = cgSym . showCG
 cgDecl :: (Name, LDecl) -> Translate (Maybe Sexp)
 cgDecl (name, LFun _ _ args body) = do
   b <- cgExp body
-  return $ Just $ S [cgName name, S [A "lambda", mkargs args, b]]
- where
-  mkargs :: [Name] -> Sexp
-  mkargs []   = S [A "$%unused"]
-  mkargs args = S $ map cgName args
+  pure $ Just $ S [cgName name, cgLam (map cgName args) b]
 cgDecl _ = pure Nothing
 
 
@@ -243,52 +234,59 @@ cgExp e = do
 
 
 
+cgApp :: Sexp -> [Sexp] -> Sexp
+cgApp fn args =
+  S $ [A "apply", fn] ++ singletonIfEmpty args (KStr "eatMeApplication")
+
+
+
+cgLam :: [Sexp] -> Sexp -> Sexp
+cgLam args body = S [A "lambda", S $ singletonIfEmpty args (A "$eaten"), body]
+
+
+
+singletonIfEmpty :: [a] -> a -> [a]
+singletonIfEmpty [] a = [a]
+singletonIfEmpty as _ = as
+
+
+
 cgExp' :: LExp -> Translate Sexp
-cgExp' (LV name          ) = pure $ cgName name
+cgExp' (LV name                ) = pure $ cgName name
 
-cgExp' (LApp tail fn []  ) = cgExp fn
-
-cgExp' (LApp tail fn args) = do
+cgExp' (LApp isTailCall fn []  ) = cgExp fn
+cgExp' (LApp isTailCall fn args) = do
   f  <- cgExp fn
   as <- mapM cgExp args
-  pure $ S $ [A "apply", f] ++ as
+  pure $ cgApp f as
 
-cgExp' (LLazyApp name []) =
-  pure $ S [A "lambda", S [A "$lazy_unused"], cgName name]
+cgExp' (LLazyApp name args) =
+  cgLam [] . cgApp (cgName name) <$> mapM cgExp args
 
-cgExp' (LLazyApp name args) = do
-  as <- mapM cgExp args
-  pure
-    $ S
-        [ A "lambda"
-        , S [A "$lazy_unused_mult"]
-        , S $ [A "apply", cgName name] ++ as
-        ]
+cgExp' (LLazyExp e                   ) = crashWith "LLazyExp!"
 
-cgExp' (LLazyExp e) = crashWith "LLazyExp???????"
-  -- a <- cgExp e
-  -- pure $ S [A "lambda", S [A "$delay"], a]
-cgExp' (LForce   e) = do
-  a <- cgExp e
-  pure $ S [A "apply", a, KStr "force_unused"]
-  -- cgExp e
+cgExp' (LForce   (LLazyApp name args)) = cgExp $ LApp False (LV name) args
+cgExp' (LForce (LV n)) = pure $ cgApp (cgName n) [KStr "eatMeForce"]
+cgExp' (LForce (LApp isTailCall name [])) = do
+  n <- cgExp name
+  pure $ cgApp n []
 
-cgExp' (LLet name exp body) = do
+cgExp' (LForce   e                   ) = cgExp e
+
+cgExp' (LLet name exp body           ) = do
   e <- cgExp exp
   b <- cgExp body
   pure $ S [A "let", S [cgName name, e], b]
 
-cgExp' (LLam args body) = do
-  e <- cgExp body
-  pure $ S [A "lambda", S $ map cgName args, e]
+cgExp' (LLam  args body) = crashWith "LLam???"
+-- cgExp' (LLam  args body) = cgLam (map cgName args) <$> cgExp body
 
-cgExp' (LProj e idx) = do
+cgExp' (LProj e    idx ) = do
   a <- cgExp e
   pure $ S [A "field", KInt idx, a]
 
 cgExp' (LCon maybeName tag name []) =
   if tag > 199 then crashWith "tag > 199" else pure $ KInt tag
-
 cgExp' (LCon maybeName tag name args) = if tag > 199
   then crashWith "tag > 199"
   else do
@@ -296,10 +294,15 @@ cgExp' (LCon maybeName tag name args) = if tag > 199
     pure $ S $ [A "block", S [A "tag", KInt tag]] ++ as
 
 cgExp' (LCase _ e cases     ) = cgSwitch e cases
+
 cgExp' (LConst k            ) = cgConst k
+
 cgExp' (LForeign fn ret args) = error "no FFI" -- fixme
+
 cgExp' (LOp prim args       ) = cgOp prim args
+
 cgExp' LNothing               = pure $ KStr "erased"
+
 cgExp' (LError s)             = pure $ S
   [ A "apply"
   , S [A "global", A "$Pervasives", A "$failwith"]
@@ -407,9 +410,8 @@ arithSuffix s                = error $ "unsupported arithmetic type: " ++ show s
 
 
 stdlib :: [String] -> [LExp] -> Translate Sexp
-stdlib path args = do
-  as <- mapM cgExp args
-  pure $ S $ [A "apply", S (A "global" : map (A . ('$' :)) path)] ++ as
+stdlib path args =
+  cgApp (S (A "global" : map (A . ('$' :)) path)) <$> mapM cgExp args
 
 
 
@@ -419,12 +421,9 @@ pervasive f = stdlib ["Pervasives", f]
 
 
 cgOp :: PrimFn -> [LExp] -> Translate Sexp
-cgOp LStrConcat [l, r] = do
-  le <- cgExp l
-  re <- cgExp r
-  pure $ S [A "apply", S [A "global", A "$Pervasives", A "$^"], le, re]
+cgOp LStrConcat [l, r] = pervasive "^" [l, r]
 
-cgOp LStrCons [c, r] = do
+cgOp LStrCons   [c, r] = do
   cc <- cgExp c
   rr <- cgExp r
   pure $ S
@@ -434,14 +433,11 @@ cgOp LStrCons [c, r] = do
     , rr
     ] -- fixme safety
 
-cgOp LWriteStr [_, str] = do
-  s <- cgExp str
-  pure $ S [A "apply", S [A "global", A "$Pervasives", A "$print_endline"], s]
+cgOp LWriteStr [_, str] = pervasive "print_endline" [str]
 
-cgOp LReadStr [_] = pure
-  $ S [A "apply", S [A "global", A "$Pervasives", A "$read_line"], KInt 0]
+cgOp LReadStr  [_]      = pervasive "read_line" []
 
-cgOp (LPlus t) args = do
+cgOp (LPlus t) args     = do
   as <- mapM cgExp args
   pure $ S $ A ("+" ++ arithSuffix t) : as
 
@@ -478,12 +474,19 @@ cgOp (LSGe t) args = do
   pure $ S $ A (">=" ++ arithSuffix t) : as
 
 cgOp (LIntStr ITNative) args = pervasive "string_of_int" args
+
 cgOp (LIntStr ITBig   ) args = stdlib ["Z", "to_string"] args
+
 cgOp (LChInt  _       ) [x]  = cgExp x
+
 cgOp (LIntCh  _       ) [x]  = cgExp x
+
 cgOp (LSExt  _ _      ) [x]  = cgExp x -- FIXME
+
 cgOp (LTrunc _ _      ) [x]  = cgExp x -- FIXME
+
 cgOp (LStrInt ITNative) [x]  = pervasive "int_of_string" [x]
+
 cgOp LStrEq             args = stdlib ["String", "equal"] args
 
 cgOp LStrLen            [x]  = do
