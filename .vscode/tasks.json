@@ -15,7 +15,6 @@
                 "echo": true,
                 "reveal": "always",
                 "focus": true,
-                "panel": "shared"
             }
         },
         {
@@ -26,7 +25,6 @@
                 "echo": true,
                 "reveal": "always",
                 "focus": true,
-                "panel": "dedicated"
             }
         },{
             "label": "idrmlf eval",
@@ -36,7 +34,6 @@
                 "echo": true,
                 "reveal": "always",
                 "focus": true,
-                "panel": "dedicated"
             }
         },
         {
@@ -47,7 +44,6 @@
                 "echo": true,
                 "reveal": "always",
                 "focus": true,
-                "panel": "dedicated"
             }
         },
         {
@@ -58,7 +54,6 @@
                 "echo": true,
                 "reveal": "always",
                 "focus": true,
-                "panel": "dedicated"
             }
         },
         {
