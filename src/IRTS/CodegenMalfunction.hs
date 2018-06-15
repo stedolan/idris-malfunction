@@ -79,7 +79,8 @@ crashWith err = MkTrn $ \m -> Left err
 -- ffi with ocaml
 -- integer pattern matching
 -- implement all primitives
--- mock params may shadow user defined stuff
+-- mock params may shadow user defined stuff 
+-- (choose smth that idris vars are not allowed)
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
   writeFile langFile $ stringify langDeclarations
@@ -249,20 +250,14 @@ cgExp e = do
 cgExp' :: LExp -> Translate Sexp
 cgExp' (LV name                ) = pure $ cgName name
 cgExp' (LApp isTailCall fn []  ) = cgExp fn
-cgExp' (LApp isTailCall fn args) = do
-  f  <- cgExp fn
-  as <- mapM cgExp args
-  pure $ mlfApp f as
+cgExp' (LApp isTailCall fn args) = mlfApp <$> cgExp fn <*> mapM cgExp args
 cgExp' (LLazyApp name args) =
-  error "LLAZYAPP" mlfLam [] . mlfApp (cgName name) <$> mapM cgExp args
-cgExp' (LLazyExp e        ) = crashWith "LLazyExp!"
--- cgExp' (LForce   (LLazyApp name args     )) = cgExp $ LApp False (LV name) args
--- cgExp' (LForce (LV n)) = pure $ cgApp (cgName n) [KStr "eatMeForce"]
--- cgExp' (LForce   (LApp isTailCall name [])) = do
---   n <- cgExp name
---   pure $ cgApp n []
-cgExp' (LForce   e        ) = cgExp e
-cgExp' (LLet name exp body) = do
+  mlfLam [] . mlfApp (cgName name) <$> mapM cgExp args
+cgExp' (LLazyExp e                        ) = crashWith "LLazyExp!"
+cgExp' (LForce   (LLazyApp name args     )) = cgExp $ LApp False (LV name) args
+cgExp' (LForce (LV n)) = pure $ mlfApp (cgName n) [KStr "FORCE_EATME"] -- can empty
+cgExp' (LForce   e                        ) = cgExp e
+cgExp' (LLet name exp body                ) = do
   e <- cgExp exp
   b <- cgExp body
   pure $ S [A "let", S [cgName name, e], b]
@@ -322,13 +317,13 @@ cgSwitch e cases = do
   tagcases :: Translate [(Int, LAlt, Bool)]
   tagcases = do
     m <- ask
-    pure $ concatMap
+    pure $ mapMaybe
       (\c -> case c of
-        (LConCase _ n [] _) -> [(getTag n m, c, False)]
-        (LConCase _ n _  _) -> [(getTag n m, c, True)]
-        _                   -> []
+        (LConCase _ n [] _) -> Just (getTag n m, c, False)
+        (LConCase _ n _  _) -> Just (getTag n m, c, True)
+        _                   -> Nothing
       )
-      cases -- better filter and then map?
+      cases
 
   taggroups :: Translate [(Int, [LAlt], Bool)]
   taggroups =
@@ -341,7 +336,7 @@ cgSwitch e cases = do
         )
       .   groupBy ((==) `on` oneOfThree)
       .   sortBy (comparing oneOfThree)
-      <$> tagcases -- why sort?
+      <$> tagcases
 
   cgTagGroup :: (Int, [LAlt], Bool) -> Translate Sexp
   cgTagGroup (tagmod, cases, isBlock) = do
@@ -369,7 +364,7 @@ cgSwitch e cases = do
     pure [S [KInt n, a]]
   cgNonTagCase (LConstCase (BI n) e) = do
     a <- cgExp e
-    pure [S [KBigInt (fromInteger n), a]] -- FIXME need to use ifs
+    pure [S [KInt (fromInteger n), a]] -- FIXME need to use ifs
   cgNonTagCase (LConstCase (Ch c) e) = do
     a <- cgExp e
     pure [S [KInt (ord c), a]]
@@ -489,12 +484,18 @@ cgConst k       = crashWith $ "unimplemented constant " ++ show k
 
 
 mlfApp :: Sexp -> [Sexp] -> Sexp
-mlfApp fn args = S $ [A "apply", fn] ++ singletonIfEmpty args (KStr "APP_EATME")
+mlfApp fn args =
+  S $ [A "apply", fn] ++ singletonIfEmpty args (KStr "APP_EATME")
 
 
 
 mlfLam :: [Sexp] -> Sexp -> Sexp
 mlfLam args body = S [A "lambda", S $ singletonIfEmpty args (A "$EATME"), body]
+
+
+
+mlfLet :: [Sexp] -> Sexp -> Sexp
+mlfLet bindings body = S $ [A "let"] ++ bindings ++ [body]
 
 
 
