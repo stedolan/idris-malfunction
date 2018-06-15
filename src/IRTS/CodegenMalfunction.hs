@@ -74,22 +74,6 @@ crashWith err = MkTrn $ \m -> Left err
 
 
 
-okChar :: Char -> Bool
-okChar c =
-  (isAscii c && isAlpha c) || isDigit c || c `elem` ".&|$+-!@#^*~?<>=_"
-
-
-
-cgSym :: String -> Sexp
-cgSym s = A ('$' : chars s)
- where
-  chars :: String -> String
-  chars [] = []
-  chars (c : cs) | okChar c  = c : chars cs
-                 | otherwise = "%" ++ show (ord c) ++ "%" ++ chars cs
-
-
-
 -- floats
 -- unicode, cannot just show KStrs, ocaml 8bit, overflow safety?
 -- ffi with ocaml
@@ -117,7 +101,7 @@ codegenMalfunction ci = do
   compileCommand   = "malfunction compile -o " ++ outFile ++ " " ++ mlfFile
 
   runMain =
-    cgApp (cgName (sMN 0 "runMain")) [KStr "RUNMAIN_EATME", KStr "THE_WORLD"]
+    mlfApp (cgName (sMN 0 "runMain")) [KStr "RUNMAIN_EATME", KStr "THE_WORLD"]
 
   compileExp =
     S
@@ -217,6 +201,22 @@ shuffle decls rest = prelude
 
 
 
+okChar :: Char -> Bool
+okChar c =
+  (isAscii c && isAlpha c) || isDigit c || c `elem` ".&|$+-!@#^*~?<>=_"
+
+
+
+cgSym :: String -> Sexp
+cgSym s = A ('$' : chars s)
+ where
+  chars :: String -> String
+  chars [] = []
+  chars (c : cs) | okChar c  = c : chars cs
+                 | otherwise = "%" ++ show (ord c) ++ "%" ++ chars cs
+
+
+
 cgName :: Name -> Sexp
 cgName = cgSym . showCG
 
@@ -226,7 +226,7 @@ cgDecl :: (Name, LDecl) -> Translate (Maybe Sexp)
 cgDecl (name, LFun _ _ args body) = do
   b <- cgExp body
   let worldArg = [ sUN "world" | showCG name == "Main.main" ]
-  pure $ Just $ S [cgName name, cgLam (map cgName $ args ++ worldArg) b]
+  pure $ Just $ S [cgName name, mlfLam (map cgName $ args ++ worldArg) b]
 cgDecl _ = pure Nothing
 
 
@@ -246,31 +246,15 @@ cgExp e = do
 
 
 
-cgApp :: Sexp -> [Sexp] -> Sexp
-cgApp fn args = S $ [A "apply", fn] ++ singletonIfEmpty args (KStr "APP_EATME")
-
-
-
-cgLam :: [Sexp] -> Sexp -> Sexp
-cgLam args body = S [A "lambda", S $ singletonIfEmpty args (A "$EATME"), body]
-
-
-
-singletonIfEmpty :: [a] -> a -> [a]
-singletonIfEmpty [] a = [a]
-singletonIfEmpty as _ = as
-
-
-
 cgExp' :: LExp -> Translate Sexp
 cgExp' (LV name                ) = pure $ cgName name
 cgExp' (LApp isTailCall fn []  ) = cgExp fn
 cgExp' (LApp isTailCall fn args) = do
   f  <- cgExp fn
   as <- mapM cgExp args
-  pure $ cgApp f as
+  pure $ mlfApp f as
 cgExp' (LLazyApp name args) =
-  error "LLAZYAPP" cgLam [] . cgApp (cgName name) <$> mapM cgExp args
+  error "LLAZYAPP" mlfLam [] . mlfApp (cgName name) <$> mapM cgExp args
 cgExp' (LLazyExp e        ) = crashWith "LLazyExp!"
 -- cgExp' (LForce   (LLazyApp name args     )) = cgExp $ LApp False (LV name) args
 -- cgExp' (LForce (LV n)) = pure $ cgApp (cgName n) [KStr "eatMeForce"]
@@ -407,7 +391,7 @@ arithSuffix s                = error $ "unsupported arithmetic type: " ++ show s
 
 stdlib :: [String] -> [LExp] -> Translate Sexp
 stdlib path args =
-  cgApp (S (A "global" : map (A . ('$' :)) path)) <$> mapM cgExp args
+  mlfApp (S (A "global" : map (A . ('$' :)) path)) <$> mapM cgExp args
 
 
 
@@ -485,7 +469,7 @@ cgOp LStrTail [x] = do
     ]
 cgOp LStrRev [s] = do
   e <- cgExp s
-  pure $ cgApp (A "$%strrev") [e]
+  pure $ mlfApp (A "$%strrev") [e]
 cgOp p _ = pure $ S
   [ A "apply"
   , S [A "global", A "$Pervasives", A "$failwith"]
@@ -501,3 +485,19 @@ cgConst (Fl  x) = crashWith "no floats"
 cgConst (Ch  i) = pure $ KInt (ord i)
 cgConst (Str s) = pure $ KStr s
 cgConst k       = crashWith $ "unimplemented constant " ++ show k
+
+
+
+mlfApp :: Sexp -> [Sexp] -> Sexp
+mlfApp fn args = S $ [A "apply", fn] ++ singletonIfEmpty args (KStr "APP_EATME")
+
+
+
+mlfLam :: [Sexp] -> Sexp -> Sexp
+mlfLam args body = S [A "lambda", S $ singletonIfEmpty args (A "$EATME"), body]
+
+
+
+singletonIfEmpty :: [a] -> a -> [a]
+singletonIfEmpty [] a = [a]
+singletonIfEmpty as _ = as
