@@ -81,6 +81,7 @@ crashWith err = MkTrn $ \m -> Left err
 -- implement all primitives
 -- mock params may shadow user defined stuff 
 -- (choose smth that idris vars are not allowed)
+-- use ocaml gc optimizations through env vars
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
   writeFile langFile $ stringify langDeclarations
@@ -101,8 +102,8 @@ codegenMalfunction ci = do
   evalCommand      = "cat " ++ mlfFile ++ " | malfunction eval"
   compileCommand   = "malfunction compile -o " ++ outFile ++ " " ++ mlfFile
 
-  runMain =
-    mlfApp (cgName (sMN 0 "runMain")) [KStr "RUNMAIN_EATME", KStr "THE_WORLD"]
+  runMain          = mlfApp (cgName (sMN 0 "runMain")) [KStr "RUNMAIN_EATME"] --, KStr "THE_WORLD"]
+    -- can cause segfault is main is not called
 
   compileExp =
     S
@@ -248,20 +249,24 @@ cgExp e = do
 
 
 cgExp' :: LExp -> Translate Sexp
-cgExp' (LV name                ) = pure $ cgName name
-cgExp' (LApp isTailCall fn []  ) = cgExp fn
+cgExp' (LV name                          ) = pure $ cgName name
+cgExp' (LApp isTailCall fn           []  ) = cgExp fn
+cgExp' (LApp isTailCall fn@(LV name) args) = mlfApp <$> cgExp fn <*> mapM
+  cgExp
+  (args ++ theWorld)
+  where theWorld = [ LConst $ Str "THE_WORLD" | showCG name == "Main.main" ]
 cgExp' (LApp isTailCall fn args) = mlfApp <$> cgExp fn <*> mapM cgExp args
 cgExp' (LLazyApp name args) =
   mlfLam [] . mlfApp (cgName name) <$> mapM cgExp args
-cgExp' (LLazyExp e                        ) = crashWith "LLazyExp!"
-cgExp' (LForce   (LLazyApp name args     )) = cgExp $ LApp False (LV name) args
+cgExp' (LLazyExp e                   ) = crashWith "LLazyExp!" --FIXME
+cgExp' (LForce   (LLazyApp name args)) = cgExp $ LApp False (LV name) args
 cgExp' (LForce (LV n)) = pure $ mlfApp (cgName n) [KStr "FORCE_EATME"] -- can empty
-cgExp' (LForce   e                        ) = cgExp e
-cgExp' (LLet name exp body                ) = do
+cgExp' (LForce   e                   ) = cgExp e
+cgExp' (LLet name exp body           ) = do
   e <- cgExp exp
   b <- cgExp body
   pure $ S [A "let", S [cgName name, e], b]
-cgExp' (LLam  args body) = crashWith "LLam???"
+cgExp' (LLam  args body) = crashWith "LLam???" -- FIXME
 -- cgExp' (LLam  args body) = cgLam (map cgName args) <$> cgExp body
 cgExp' (LProj e    idx ) = do
   a <- cgExp e
