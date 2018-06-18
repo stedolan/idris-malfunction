@@ -1,4 +1,5 @@
 module Main
 
 main : IO ()
-main = putStrLn $ show $ take 100 [1..]
+main = 
+   let s = [1..] in putStrLn $ show $ take 100 s

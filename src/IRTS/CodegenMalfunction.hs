@@ -79,8 +79,6 @@ crashWith err = MkTrn $ \m -> Left err
 -- ffi with ocaml
 -- integer pattern matching
 -- implement all primitives
--- mock params may shadow user defined stuff 
--- (choose smth that idris vars are not allowed)
 -- use ocaml gc optimizations through env vars
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
@@ -179,26 +177,27 @@ shuffle decls rest = prelude
   prelude :: [Sexp]
   prelude =
     [ S
-        [ A "$%strrev"
+      [ A "$%strrev"
+      , S
+        [ A "lambda"
+        , S [A "$s"]
         , S
-          [ A "lambda"
-          , S [A "$s"]
+          [ A "let"
+          , S [A "$n", S [A "-", S [A "length.byte", A "$s"], KInt 1]]
           , S
-            [ A "let"
-            , S [A "$n", S [A "-", S [A "length.byte", A "$s"], KInt 1]]
+            [ A "apply"
+            , S [A "global", A "$String", A "$mapi"]
             , S
-              [ A "apply"
-              , S [A "global", A "$String", A "$mapi"]
-              , S
-                [ A "lambda"
-                , S [A "$i", A "$c"]
-                , S [A "load.byte", A "$s", S [A "-", A "$n", A "$i"]]
-                ]
-              , A "$s"
+              [ A "lambda"
+              , S [A "$i", A "$c"]
+              , S [A "load.byte", A "$s", S [A "-", A "$n", A "$i"]]
               ]
+            , A "$s"
             ]
           ]
         ]
+      ]
+    , mlfForce
     ]
 
 
@@ -240,7 +239,7 @@ cgExp e = do
   --       (LApp isTail _ _) -> "<<isTail:" ++ show isTail ++ ">>"
   --       (LLazyApp _ _   ) -> "<<lazy>>"
   --       _                 -> ""
-  -- pure $ S [A "seq", cgApp print_endline [KStr $ isTail ++ show e ++ "\n"], a]
+  -- pure $ S [A "seq", mlfApp print_endline [KStr $ isTail ++ show e ++ "\n"], a]
   cgExp' e
  where
   print_endline :: Sexp
@@ -257,11 +256,25 @@ cgExp' (LApp isTailCall fn@(LV name) args) = mlfApp <$> cgExp fn <*> mapM
   where theWorld = [ LConst $ Str "THE_WORLD" | showCG name == "Main.main" ]
 cgExp' (LApp isTailCall fn args) = mlfApp <$> cgExp fn <*> mapM cgExp args
 cgExp' (LLazyApp name args) =
-  mlfLam [] . mlfApp (cgName name) <$> mapM cgExp args
+  mlfBlock 199 . (: []) . mlfLam [] . mlfApp (cgName name) <$> mapM cgExp args
 cgExp' (LLazyExp e                   ) = crashWith "LLazyExp!" --FIXME
 cgExp' (LForce   (LLazyApp name args)) = cgExp $ LApp False (LV name) args
-cgExp' (LForce (LV n)) = pure $ mlfApp (cgName n) [KStr "FORCE_EATME"] -- can empty
-cgExp' (LForce   e                   ) = cgExp e
+-- cgExp' (LForce   exp) = do
+--   e <- cgExp exp
+--   pure $ S
+--     [ A "let"
+--     , S [A "$isLazy", e]
+--     , S
+--       [ A "switch"
+--       , A "$isLazy"
+--       , S
+--         [ S [A "tag", KInt 199]
+--         , S [A "apply", S [A "field", KInt 0, A "$isLazy"], KStr "FORCE_EATME"]
+--         ]
+--       , S [A "_", S [A "tag", A "_"], A "$isLazy"]
+--       ]
+--     ]
+cgExp' (LForce e) = mlfApp (A "$mlfForce") . (: []) <$> cgExp e
 cgExp' (LLet name exp body           ) = do
   e <- cgExp exp
   b <- cgExp body
@@ -272,12 +285,9 @@ cgExp' (LProj e    idx ) = do
   a <- cgExp e
   pure $ S [A "field", KInt idx, a]
 cgExp' (LCon maybeName tag name []) =
-  if tag > 199 then crashWith "tag > 199" else pure $ KInt tag
-cgExp' (LCon maybeName tag name args) = if tag > 199
-  then crashWith "tag > 199"
-  else do
-    as <- mapM cgExp args
-    pure $ S $ [A "block", S [A "tag", KInt tag]] ++ as
+  if tag > 198 then crashWith "tag > 198" else pure $ KInt tag
+cgExp' (LCon maybeName tag name args) =
+  if tag > 198 then crashWith "tag > 198" else mlfBlock tag <$> mapM cgExp args
 cgExp' (LCase _ e cases     ) = cgSwitch e cases
 cgExp' (LConst k            ) = cgConst k
 cgExp' (LForeign fn ret args) = error "no FFI" -- fixme
@@ -411,7 +421,7 @@ cgOp LStrCons   [c, r] = do
     , S [A "apply", S [A "global", A "$String", A "$make"], KInt 1, cc]
     , rr
     ] -- fixme safety
-cgOp LWriteStr [world, str] = pervasive "print_endline" [str]
+cgOp LWriteStr [world, str] = pervasive "print_string" [str]
 cgOp LReadStr  [world]      = pervasive "read_line" []
 cgOp (LPlus t) args         = do
   as <- mapM cgExp args
@@ -489,18 +499,48 @@ cgConst k       = crashWith $ "unimplemented constant " ++ show k
 
 
 mlfApp :: Sexp -> [Sexp] -> Sexp
-mlfApp fn args =
-  S $ [A "apply", fn] ++ singletonIfEmpty args (KStr "APP_EATME")
-
-
+mlfApp fn args = S $ A "apply" : fn : singletonIfEmpty args (KStr "APP_EATME")
 
 mlfLam :: [Sexp] -> Sexp -> Sexp
 mlfLam args body = S [A "lambda", S $ singletonIfEmpty args (A "$EATME"), body]
 
-
-
 mlfLet :: [Sexp] -> Sexp -> Sexp
-mlfLet bindings body = S $ [A "let"] ++ bindings ++ [body]
+mlfLet bindings body = S $ A "let" : bindings ++ [body]
+
+mlfBind :: Sexp -> Sexp -> Sexp
+mlfBind name e = S [name, e]
+
+mlfBlock :: Int -> [Sexp] -> Sexp
+mlfBlock tag fs = S $ A "block" : S [A "tag", KInt tag] : fs
+
+mlfField :: Int -> Sexp -> Sexp
+mlfField n block = S [A "field", KInt n, block]
+
+mlfSel :: [Sexp] -> Sexp -> Sexp
+mlfSel cases e = S $ cases ++ [e]
+
+mlfTagCase :: Int -> Sexp
+mlfTagCase tag = S [A "tag", KInt tag]
+
+mlfIntCase :: Int -> Sexp
+mlfIntCase = KInt
+
+mlfSwitch :: Sexp -> [Sexp] -> Sexp
+mlfSwitch sw sels = S $ A "switch" : sw : sels
+
+mlfIntRangeCase :: Int -> Int -> Sexp
+mlfIntRangeCase x y = S [KInt x, KInt y]
+
+mlfDefaultCase :: [Sexp]
+mlfDefaultCase = [A "_", S [A "tag", A "_"]]
+
+mlfForce :: Sexp
+mlfForce = mlfBind (A "$mlfForce") $ mlfLam [isLazy] $ mlfSwitch
+  isLazy
+  [ mlfSel [mlfTagCase 199] (mlfApp (mlfField 0 isLazy) [])
+  , mlfSel mlfDefaultCase   isLazy
+  ]
+  where isLazy = A "$isLazy"
 
 
 
