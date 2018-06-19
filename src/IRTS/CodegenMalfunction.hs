@@ -80,6 +80,7 @@ crashWith err = MkTrn $ \m -> Left err
 -- integer pattern matching
 -- implement all primitives
 -- use ocaml gc optimizations through env vars
+-- replace all dummy params with KInt 0 for speed?
 codegenMalfunction :: CodeGenerator
 codegenMalfunction ci = do
   writeFile langFile $ stringify langDeclarations
@@ -311,12 +312,18 @@ concatMapM f (a : as) = do
 
 
 cgSwitch :: LExp -> [LAlt] -> Translate Sexp
+cgSwitch x (LConstCase (BI n) y : cases) = do
+  e    <- cgExp x
+  exp  <- cgExp y
+  rest <- cgSwitch x cases
+  let sw = S [A "==.ibig", e, KBigInt n]
+  pure $ mlfSwitch sw [mlfSel [mlfIntCase 1] exp, mlfSel mlfDefaultCase rest]
 cgSwitch e cases = do
   a    <- cgExp e
   ts   <- taggroups
   tgs  <- mapM cgTagGroup ts
   ntgs <- concatMapM cgNonTagCase cases
-  pure $ S [A "let", S [scr, a], S $ [A "switch", scr] ++ tgs ++ ntgs]
+  pure $ mlfLet [mlfBind scr a] $ mlfSwitch scr $ tgs ++ ntgs
  where
   scr :: Sexp
   scr = A "$%matchOn"
