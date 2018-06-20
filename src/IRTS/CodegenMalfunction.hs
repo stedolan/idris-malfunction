@@ -36,6 +36,12 @@ instance Show Sexp where
 
 
 
+myShow :: Char -> String
+myShow c | ordc < 127 = [c]
+         | otherwise  = "\\u{" ++ show ordc ++ "}"
+  where ordc = ord c
+
+
 
 newtype Translate a =
    MkTrn ( Map.Map Name (Int, Int) -> Either String a)
@@ -77,7 +83,6 @@ crashWith err = MkTrn $ \m -> Left err
 -- floats
 -- unicode, cannot just show KStrs, ocaml 8bit, overflow safety?
 -- ffi with ocaml
--- integer pattern matching
 -- implement all primitives
 -- use ocaml gc optimizations through env vars
 -- replace all dummy params with KInt 0 for speed?
@@ -384,9 +389,10 @@ cgSwitch e cases = do
   cgNonTagCase (LConstCase (I n) e) = do
     a <- cgExp e
     pure [S [KInt n, a]]
-  cgNonTagCase (LConstCase (BI n) e) = do
-    a <- cgExp e
-    pure [S [KInt (fromInteger n), a]] -- FIXME need to use ifs
+  -- cgNonTagCase (LConstCase (BI n) e) = do
+  --   a <- cgExp e
+  --   pure [S [KInt (fromInteger n), a]]
+  cgNonTagCase (LConstCase (BI n) e) = crashWith "Const bigInteger case"
   cgNonTagCase (LConstCase (Ch c) e) = do
     a <- cgExp e
     pure [S [KInt (ord c), a]]
